@@ -1,0 +1,8 @@
+# Folders
+bin/
+.vscode/
+
+# Files
+*.exe
+*.o
+*.so
