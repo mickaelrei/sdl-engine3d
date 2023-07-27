@@ -19,7 +19,7 @@ public:
     void draw();
 
     // Method to start engine
-    void start();
+    void run();
 
     // Input data
     Vec2D GetMousePos();

@@ -6,6 +6,11 @@
 #include <fstream>
 #include <sstream>
 
+inline float map_num(float n, float start1, float stop1, float start2, float stop2)
+{
+    return (n - start1) / (stop1 - start1) * (stop2 - start2) + start2;
+}
+
 struct Vec3D
 {
     float x = 0;
@@ -177,6 +182,84 @@ struct Mesh
 
         return true;
     }
+
+    void toCube(Vec3D size = {1.0f, 1.0f, 1.0f})
+    {
+        printf("%.2f, %.2f, %.2f\n", size.x, size.y, size.z);
+        tris = {
+            
+            // FRONT
+            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f },
+            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+
+            // RIGHT                                                      
+            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f },
+            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f },
+
+            // BACK                                                     
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f },
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f },
+
+            // LEFT                                                      
+            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f },
+            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+
+            // TOP                                                       
+            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f },
+            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f },
+
+            // BOTTOM                                                    
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+		};
+    }
+
+    void toSphere(float radius, int resolution = 10)
+    {
+        std::vector<Vec3D> vertices;
+
+        // Create vertices
+        for (int i = 0; i < resolution; i++)
+        {
+            float lat = map_num(i, 0, resolution-1, 0, 2 * M_PI);
+            for (int j = 0; j < resolution; j++)
+            {
+                float lon = map_num(j, 0, resolution-1, 0, M_PI);
+
+                Vec3D v;
+                v.x = SDL_sinf(lon) * SDL_cosf(lat);
+                v.y = SDL_sinf(lon) * SDL_sinf(lat);
+                v.z = SDL_cosf(lon);
+
+                vertices.push_back(v);
+            }
+        }
+
+        // Create faces
+        for (int i = 0; i < resolution - 1; i++)
+        {
+            for (int j = 0; j < resolution - 1; j++)
+            {
+                // Get indices
+                int i0 = i + j * resolution;
+                int i1 = (i+1) + j * resolution;
+                int i2 = i + (j+1) * resolution;
+                int i3 = (i+1) + (j+1) * resolution;
+
+                // Create two triangles
+                tris.push_back({
+                    vertices[i0],
+                    vertices[i1],
+                    vertices[i2]
+                });
+                tris.push_back({
+                    vertices[i2],
+                    vertices[i1],
+                    vertices[i3]
+                });
+            }
+        }
+    }
 };
 
 struct Mat4x4
@@ -209,12 +292,12 @@ struct Mat4x4
 
 struct Camera
 {
-    Vec3D pos;
-    Vec3D forward;
+    Vec3D pos = {0.0f, 0.0f, 0.0f};
+    Vec3D forward = {0.0f, 0.0f, 1.0f};
     Vec3D up = {0.0f, 1.0f, 0.0f};
 
-    float near, far;
-    float fov;
+    float near = .1f, far = 1000.0f;
+    float fov = 90.0f;
 };
 
 // Color
