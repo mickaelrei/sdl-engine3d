@@ -59,7 +59,7 @@ private:
     const Uint8 *keyboardState;
 
     // Performance data
-    Uint32 delay_ms;
+    Uint32 delay_ms = 0;
     Uint32 lastTick, nowTick;
     float dt;
 
@@ -90,7 +90,7 @@ private:
     //-------------------//
     //      TESTING      //
     //-------------------//
-    Mesh meshCube;
+    std::vector<Mesh> sceneMeshes;
 
 
     float theta = 0.0f;

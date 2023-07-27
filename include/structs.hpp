@@ -128,6 +128,9 @@ struct Triangle
 struct Mesh
 {
     std::vector<Triangle> tris;
+    Vec3D position = { 0.0f, 0.0f, 0.0f };
+    Vec3D rotation = { 0.0f, 0.0f, 0.0f };
+    Vec3D size = {1.0f, 1.0f, 1.0f};
 
     bool LoadFromOBJFile(std::string fileName)
     {
