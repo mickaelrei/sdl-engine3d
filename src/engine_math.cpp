@@ -64,7 +64,7 @@ Mat4x4 Engine3D::Matrix_Projection(Camera cam)
 {
     float fFovRad = 1.0f / SDL_tanf(cam.fov * 0.5f / 180.0f * 3.14159f);
     Mat4x4 matrix;
-    matrix.m[0][0] = aspectRatio * fFovRad;
+    matrix.m[0][0] = (_height / _width) * fFovRad;
     matrix.m[1][1] = fFovRad;
     matrix.m[2][2] = cam.far / (cam.far - cam.near);
     matrix.m[3][2] = (-cam.far * cam.near) / (cam.far - cam.near);
@@ -135,13 +135,13 @@ Mat4x4 Engine3D::Matrix_QuickInverse(Mat4x4 m)
 }
 
 // Vec3D operations
-Vec3D Engine3D::Vector_IntersectPlane(Vec3D &plane_p, Vec3D &plane_n, Vec3D &lineStart, Vec3D &lineEnd)
+Vec3D Engine3D::Vector_IntersectPlane(Vec3D &plane_p, Vec3D &plane_n, Vec3D &lineStart, Vec3D &lineEnd, float &t)
 {
     plane_n = plane_n.unit();
     float plane_d = -plane_n.dot(plane_p);
     float ad = lineStart.dot(plane_n);
     float bd = lineEnd.dot(plane_n);
-    float t = (-plane_d - ad) / (bd - ad);
+    t = (-plane_d - ad) / (bd - ad);
     Vec3D lineStartToEnd = lineEnd - lineStart;
     Vec3D lineToIntersect = lineStartToEnd * t;
     return lineStart + lineToIntersect;
@@ -163,18 +163,35 @@ int Engine3D::Triangle_ClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &
     // If distance sign is positive, point lies on "inside" of plane
     Vec3D* inside_points[3];  int nInsidePointCount = 0;
     Vec3D* outside_points[3]; int nOutsidePointCount = 0;
+    TexUV* inside_tex[3]; int nInsideTexCount = 0;
+    TexUV* outside_tex[3]; int nOutsideTexCount = 0;
 
     // Get signed distance of each point in triangle to plane
     float d0 = dist(in_tri.p[0]);
     float d1 = dist(in_tri.p[1]);
     float d2 = dist(in_tri.p[2]);
 
-    if (d0 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[0]; }
-    else { outside_points[nOutsidePointCount++] = &in_tri.p[0]; }
-    if (d1 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[1]; }
-    else { outside_points[nOutsidePointCount++] = &in_tri.p[1]; }
-    if (d2 >= 0) { inside_points[nInsidePointCount++] = &in_tri.p[2]; }
-    else { outside_points[nOutsidePointCount++] = &in_tri.p[2]; }
+    if (d0 >= 0) {
+        inside_points[nInsidePointCount++] = &in_tri.p[0];
+        inside_tex[nInsideTexCount++] = &in_tri.t[0];
+    } else {
+        outside_points[nOutsidePointCount++] = &in_tri.p[0];
+        outside_tex[nOutsideTexCount++] = &in_tri.t[0];
+    }
+    if (d1 >= 0) {
+        inside_points[nInsidePointCount++] = &in_tri.p[1];
+        inside_tex[nInsideTexCount++] = &in_tri.t[1];
+    } else {
+        outside_points[nOutsidePointCount++] = &in_tri.p[1];
+        outside_tex[nOutsideTexCount++] = &in_tri.t[1];
+    }
+    if (d2 >= 0) {
+        inside_points[nInsidePointCount++] = &in_tri.p[2];
+        inside_tex[nInsideTexCount++] = &in_tri.t[2];
+    } else {
+        outside_points[nOutsidePointCount++] = &in_tri.p[2];
+        outside_tex[nOutsideTexCount++] = &in_tri.t[2];
+    }
 
     // Now classify triangle points, and break the input triangle into 
     // smaller output triangles if required. There are four possible
@@ -207,11 +224,18 @@ int Engine3D::Triangle_ClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &
 
         // The inside point is valid, so keep that...
         out_tri1.p[0] = *inside_points[0];
+        out_tri1.t[0] = *inside_tex[0];
 
         // but the two new points are at the locations where the 
         // original sides of the triangle (lines) intersect with the plane
-        out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
-        out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[1]);
+        float t;
+        out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0], t);
+        out_tri1.t[1].u = t * (outside_tex[0]->u - inside_tex[0]->u) + inside_tex[0]->u;
+        out_tri1.t[1].v = t * (outside_tex[0]->v - inside_tex[0]->v) + inside_tex[0]->v;
+
+        out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[1], t);
+        out_tri1.t[2].u = t * (outside_tex[1]->u - inside_tex[0]->u) + inside_tex[0]->u;
+        out_tri1.t[2].v = t * (outside_tex[1]->v - inside_tex[0]->v) + inside_tex[0]->v;
 
         return 1; // Return the newly formed single triangle
     }
@@ -231,14 +255,24 @@ int Engine3D::Triangle_ClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &
         // intersects with the plane
         out_tri1.p[0] = *inside_points[0];
         out_tri1.p[1] = *inside_points[1];
-        out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
+        out_tri1.t[0] = *inside_tex[0];
+        out_tri1.t[1] = *inside_tex[1];
+
+        float t;
+        out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0], t);
+        out_tri1.t[2].u = t * (outside_tex[0]->u - inside_tex[0]->u) + inside_tex[0]->u;
+        out_tri1.t[2].v = t * (outside_tex[0]->v - inside_tex[0]->v) + inside_tex[0]->v;
 
         // The second triangle is composed of one of he inside points, a
         // new point determined by the intersection of the other side of the 
         // triangle and the plane, and the newly created point above
         out_tri2.p[0] = *inside_points[1];
+        out_tri2.t[0] = *inside_tex[1];
         out_tri2.p[1] = out_tri1.p[2];
-        out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[1], *outside_points[0]);
+        out_tri2.t[1] = out_tri1.t[2];
+        out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, *inside_points[1], *outside_points[0], t);
+        out_tri2.t[2].u = t * (outside_tex[0]->u - inside_tex[1]->u) + inside_tex[1]->u;
+        out_tri2.t[2].v = t * (outside_tex[0]->v - inside_tex[1]->v) + inside_tex[1]->v;
 
         return 2; // Return two newly formed triangles which form a quad
     }

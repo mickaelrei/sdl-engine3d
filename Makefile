@@ -20,6 +20,7 @@ DEST := bin
 OBJ_NAME := main
 
 wbuild:
+	powershell if (!(Test-Path -Path $(DEST))) {[void](New-Item -Name $(DEST) -Path . -ItemType directory)}
 	$(CC) -I C:/SDL2/include -I $(INCLUDES) -L C:/SDL2/lib $(SRC) -o $(DEST)/$(OBJ_NAME) $(WFLAGS) $(FLAGS)
 
 build:

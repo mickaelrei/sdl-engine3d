@@ -6,17 +6,32 @@
 #include <fstream>
 #include <sstream>
 
+// Other structs
+#include "texture.hpp"
+
 inline float map_num(float n, float start1, float stop1, float start2, float stop2)
 {
     return (n - start1) / (stop1 - start1) * (stop2 - start2) + start2;
 }
+
+struct TexUV
+{
+    float u = 0;
+    float v = 0;
+    float w = 1; // Need a 3rd element to work with perspective changes
+
+    // Printing
+    friend std::ostream& operator << (std::ostream &os, const TexUV &v) {
+        return (os << "(" << v.u << ", " << v.v << ", " << v.w << ")");
+    }
+};
 
 struct Vec3D
 {
     float x = 0;
     float y = 0;
     float z = 0;
-    float w = 1;
+    float w = 1; // Need a 4th element to work better with matrix operations
 
     // Vec3D(const float& _x = 0, const float& _y = 0, const float& _z = 0) { x = _x; y = _y; z = _z; }
     // Vec3D(const Vec3D& v) { x = v.x; y = v.y; z = v.z; }
@@ -71,7 +86,7 @@ struct Vec3D
 
     // Printing
     friend std::ostream& operator << (std::ostream &os, const Vec3D &v) {
-        return (os << "(" << v.x << ", " << v.y << ", " << v.z << ")");
+        return (os << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")");
     }
 };
 
@@ -127,6 +142,7 @@ struct Vec2D
 struct Triangle
 {
     Vec3D p[3];
+    TexUV t[3];
     SDL_Color color = {255, 255, 255, SDL_ALPHA_OPAQUE};
 };
 
@@ -136,6 +152,15 @@ struct Mesh
     Vec3D position = { 0.0f, 0.0f, 0.0f };
     Vec3D rotation = { 0.0f, 0.0f, 0.0f };
     Vec3D size = {1.0f, 1.0f, 1.0f};
+    Texture texture;
+
+    void setColor(SDL_Color color)
+    {
+        for (auto& tri : tris)
+        {
+            tri.color = color;
+        }
+    }
 
     bool LoadFromOBJFile(std::string fileName)
     {
@@ -185,32 +210,30 @@ struct Mesh
 
     void toCube(Vec3D size = {1.0f, 1.0f, 1.0f})
     {
-        printf("%.2f, %.2f, %.2f\n", size.x, size.y, size.z);
         tris = {
-            
             // FRONT
-            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f },
-            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
-            // RIGHT                                                      
-            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f },
-            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f },
+            // RIGHT
+            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
-            // BACK                                                     
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f },
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f },
+            // BACK
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
-            // LEFT                                                      
-            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f },
-            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+            // LEFT
+            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
-            // TOP                                                       
-            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f },
-            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f },
+            // TOP
+            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
-            // BOTTOM                                                    
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f },
+            // BOTTOM
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 		};
     }
 
@@ -227,9 +250,9 @@ struct Mesh
                 float lon = map_num(j, 0, resolution-1, 0, M_PI);
 
                 Vec3D v;
-                v.x = SDL_sinf(lon) * SDL_cosf(lat);
-                v.y = SDL_sinf(lon) * SDL_sinf(lat);
-                v.z = SDL_cosf(lon);
+                v.x = SDL_sinf(lon) * SDL_cosf(lat) * radius * 0.5f;
+                v.y = SDL_sinf(lon) * SDL_sinf(lat) * radius * 0.5f;
+                v.z = SDL_cosf(lon) * radius * 0.5f;
 
                 vertices.push_back(v);
             }
@@ -261,6 +284,7 @@ struct Mesh
         }
     }
 };
+
 
 struct Mat4x4
 {

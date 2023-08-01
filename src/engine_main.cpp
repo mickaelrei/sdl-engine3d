@@ -11,7 +11,7 @@ Engine3D::Engine3D()
     windowSurface = NULL;
 }
 
-bool Engine3D::init(int _width, int _height)
+bool Engine3D::init(int width, int height)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -23,8 +23,8 @@ bool Engine3D::init(int _width, int _height)
         windowTitle.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        _width,
-        _height,
+        width,
+        height,
         0
     );
     if (!window)
@@ -47,31 +47,34 @@ bool Engine3D::init(int _width, int _height)
         return false;
     }
 
-    width = _width;
-    height = _height;
+    _width = width;
+    _height = height;
+    // depthBuffer = new float[_width * _height];
 
     return true;
 }
 
 Engine3D::~Engine3D()
 {
-    if (windowSurface != NULL)
+    if (windowSurface)
     {
         SDL_FreeSurface(windowSurface);
         windowSurface = NULL;
     }
 
-    if (renderer != NULL)
+    if (renderer)
     {
         SDL_DestroyRenderer(renderer);
         renderer = NULL;
     }
 
-    if (window != NULL)
+    if (window)
     {
         SDL_DestroyWindow(window);
         window = NULL;
     }
+
+    SDL_Quit();
 }
 
 // Input
@@ -97,45 +100,44 @@ void Engine3D::SetFPS(int fps)
 void Engine3D::setup()
 {
     // Set camera info
-    cam.pos = {0.0f, 0.0f, -8.0f};
-    aspectRatio = height / width;
+    cam.pos = {0.0f, 0.0f, -15.0f};
 
     // Set matrices
     matProj = Matrix_Projection(cam);
 
-    // Load blocks
-    float size = 5.0f;
-    float padding = .2f;
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 10; j++)
-        {
-            Mesh mesh;
-            mesh.toCube({size, size, size});
-            mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
+    // Load block
+    Mesh mesh;
+    mesh.toCube();
+    // mesh.texture.init("assets/bmp/jotaro_cat.bmp");
+    sceneMeshes.push_back(mesh);
 
-            sceneMeshes.push_back(mesh);
-        }
-    }
+    // Load blocks
+    // float size = 5.0f;
+    // float padding = .2f;
+    // // for (int i = 0; i < 1; i++)
+    // // {
+    // //     for (int j = 0; j < 1; j++)
+    // //     {
+    // //         Mesh mesh;
+    // //         mesh.toCube({size, size, size});
+    // //         mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
+
+    // //         sceneMeshes.push_back(mesh);
+    // //     }
+    // // }
 
     // Load mesh
     // Mesh dogMesh;
-    // if (!dogMesh.LoadFromOBJFile("obj3ds/jack_russell.obj"))
+    // if (!dogMesh.LoadFromOBJFile("assets/obj3ds/jack_russell.obj"))
     // {
     //     printf("Error loading object from OBJ file\n");
     //     running = false;
     //     return;
     // }
 
-    // // Set colors
-    // for (auto& tri : dogMesh.tris)
-    // {
-    //     tri.color = {255, 0, 0, 255};
-    // }
-
     // // Load another mesh
     // Mesh neymarMesh;
-    // if (!neymarMesh.LoadFromOBJFile("obj3ds/neymar.obj"))
+    // if (!neymarMesh.LoadFromOBJFile("assets/obj3ds/neymar.obj"))
     // {
     //     printf("Error loading object from OBJ file\n");
     //     running = false;
@@ -157,14 +159,14 @@ void Engine3D::setup()
     // Add light
     Light light;
     light.dir = {0.0f, 0.0f, 1.0f};
-    light.brightness = 1.0f;
+    light.brightness = .7f;
     lights.push_back(light);
 }
 
 void Engine3D::update(float dt)
 {
     Vec3D right = cam.forward.cross(cam.up);
-    float speed = 5.0f;
+    float speed = 15.0f;
     float turnSpeed = 3.0f;
     if (keyboardState[SDL_SCANCODE_UP])
         pitch -= turnSpeed * dt * .25f;
@@ -200,10 +202,11 @@ void Engine3D::update(float dt)
 
 void Engine3D::draw()
 {
+    // Clear screen
     Fill();
 
     // Loop through every scene mesh
-    for (Mesh mesh : sceneMeshes)
+    for (auto& mesh : sceneMeshes)
     {
         // Apply rotation
         Mat4x4 matRotZ = Matrix_RotationZ(mesh.rotation.z);
@@ -225,7 +228,7 @@ void Engine3D::draw()
 
         // Project triangles
         std::vector<Triangle> trianglesToRaster;
-        for (auto tri : mesh.tris)
+        for (auto& tri : mesh.tris)
         {
             // Scale points
             Triangle scaledTri;
@@ -235,7 +238,10 @@ void Engine3D::draw()
 
             Triangle triProjected, triTransformed, triViewed;
             for (int i = 0; i < 3; i++)
+            {
                 triTransformed.p[i] = matWorld * scaledTri.p[i];
+                triTransformed.t[i] = tri.t[i];
+            }
 
             // Calculate triangle normal
             Vec3D normal, line1, line2;
@@ -248,7 +254,6 @@ void Engine3D::draw()
             // Get ray from triangle to camera
             Vec3D cameraRay = triTransformed.p[0] - cam.pos;
 
-            // if (normal.z < 0)
             if (normal.dot(cameraRay) < 0.0f)
             {
                 // Illumination
@@ -264,8 +269,10 @@ void Engine3D::draw()
                 triProjected.color = hsl.ToRGB();
 
                 // Convert from World Space to View Space
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 3; i++) {
                     triViewed.p[i] = matView * triTransformed.p[i];
+                    triViewed.t[i] = triTransformed.t[i];
+                }
 
                 // Clip viewed triangle against near plane, this could
                 // form two additional triangles
@@ -284,6 +291,23 @@ void Engine3D::draw()
                     for (int i = 0; i < 3; i++)
                     {
                         triProjected.p[i] = matProj * clipped[n].p[i];
+                        triProjected.t[i] = clipped[n].t[i];
+                    }
+
+                    // Project texture
+                    if (mesh.texture.loaded)
+                    {
+                        triProjected.t[0].u /= triProjected.p[0].w;
+                        triProjected.t[1].u /= triProjected.p[1].w;
+                        triProjected.t[2].u /= triProjected.p[2].w;
+
+                        triProjected.t[0].v /= triProjected.p[0].w;
+                        triProjected.t[1].v /= triProjected.p[1].w;
+                        triProjected.t[2].v /= triProjected.p[2].w;
+
+                        triProjected.t[0].w = 1.0f / triProjected.p[0].w;
+                        triProjected.t[1].w = 1.0f / triProjected.p[1].w;
+                        triProjected.t[2].w = 1.0f / triProjected.p[2].w;
                     }
 
                     // Apply position modifiers
@@ -295,8 +319,8 @@ void Engine3D::draw()
 
                         // Offset into visible space
                         triProjected.p[i] += offsetView;
-                        triProjected.p[i].x *= 0.5f * width;
-                        triProjected.p[i].y *= 0.5f * height;
+                        triProjected.p[i].x *= 0.5f * _width;
+                        triProjected.p[i].y *= 0.5f * _height;
                     }
 
                     // Store triangle for sorting
@@ -314,7 +338,12 @@ void Engine3D::draw()
             return z1 < z2;
         });
 
+        // Clear depth buffer
+        // for (int i = 0; i < _width * _height; i++)
+        //     depthBuffer[i] = 0.0f;
+
         // Clipping
+        printf("%d tris\n", trianglesToRaster.size());
         for (Triangle& triToRaster : trianglesToRaster)
         {
             // Clip triangles against all four screen edges, this could
@@ -341,21 +370,21 @@ void Engine3D::draw()
                             trisToAdd = Triangle_ClipAgainstPlane({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         case 1:
-                            trisToAdd = Triangle_ClipAgainstPlane({0.0f, (float)height - 1, 0.0f}, {0.0f, -1.0f, 0.0f}, test, clipped[0], clipped[1]);
+                            trisToAdd = Triangle_ClipAgainstPlane({0.0f, (float)_height - 1, 0.0f}, {0.0f, -1.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         case 2:
                             trisToAdd = Triangle_ClipAgainstPlane({0.0f, 0.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         case 3:
-                            trisToAdd = Triangle_ClipAgainstPlane({(float)width - 1, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
+                            trisToAdd = Triangle_ClipAgainstPlane({(float)_width - 1, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         }
 
-                        // Clipping may yield a variable number of triangles, so
-                        // add these new ones to the back of the queue for subsequent
-                        // clipping against next planes
-                        for (int w = 0; w < trisToAdd; w++)
-                            listTriangles.push_back(clipped[w]);
+                    // Clipping may yield a variable number of triangles, so
+                    // add these new ones to the back of the queue for subsequent
+                    // clipping against next planes
+                    for (int w = 0; w < trisToAdd; w++)
+                        listTriangles.push_back(clipped[w]);
                 }
                 newTriangles = listTriangles.size();
             }
@@ -363,18 +392,27 @@ void Engine3D::draw()
             // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
             for (auto &t : listTriangles)
             {
-                FillTriangle(
-                    {t.p[0].x, t.p[0].y},
-                    {t.p[1].x, t.p[1].y},
-                    {t.p[2].x, t.p[2].y},
-                    t.color
-                );
-                // RenderTriangle(
+                // TexturedTriangle(
+                //     {t.p[0].x, t.p[0].y},
+                //     t.t[0],
+                //     {t.p[1].x, t.p[1].y},
+                //     t.t[1],
+                //     {t.p[2].x, t.p[2].y},
+                //     t.t[2],
+                //     mesh.texture
+                // );
+                // FillTriangle(
                 //     {t.p[0].x, t.p[0].y},
                 //     {t.p[1].x, t.p[1].y},
                 //     {t.p[2].x, t.p[2].y},
-                //     {0, 0, 0, 255}
+                //     t.color
                 // );
+                RenderTriangle(
+                    {t.p[0].x, t.p[0].y},
+                    {t.p[1].x, t.p[1].y},
+                    {t.p[2].x, t.p[2].y},
+                    {255, 255, 255, 255}
+                );
             }
         }
     }
@@ -412,6 +450,11 @@ void Engine3D::run()
         // Call methods
         update(dt);
         draw();
+
+        // Set title
+        std::stringstream title;
+        title << "SDL Engine 3D | " << (int)(1.0f / dt) << " fps";
+        SDL_SetWindowTitle(window, title.str().c_str());
 
         // Update renderer
         SDL_RenderPresent(renderer);

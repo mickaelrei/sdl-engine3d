@@ -1,5 +1,6 @@
 #include <array>
 #include <algorithm>
+#include <bits/stdc++.h>
 
 #include "engine.hpp"
 
@@ -16,24 +17,24 @@ void Engine3D::RenderPoint(Vec2D p, SDL_Color color)
     SDL_RenderDrawPointF(renderer, p.x, p.y);
 }
 
-void Engine3D::RenderTriangle(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color)
+void Engine3D::RenderTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-    SDL_RenderDrawLine(renderer, (int)v0.x, (int)v0.y, (int)v1.x, (int)v1.y);
-    SDL_RenderDrawLine(renderer, (int)v1.x, (int)v1.y, (int)v2.x, (int)v2.y);
-    SDL_RenderDrawLine(renderer, (int)v2.x, (int)v2.y, (int)v0.x, (int)v0.y);
+    SDL_RenderDrawLine(renderer, (int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y);
+    SDL_RenderDrawLine(renderer, (int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y);
+    SDL_RenderDrawLine(renderer, (int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y);
 }
 
 /* My attempt (not perfect), reading from:
 http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
 */
-void Engine3D::FillTriangleOld(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color)
+void Engine3D::FillTriangleOld(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
     // Create array
-    std::array<Vec2D, 3> vecList = {v0, v1, v2};
+    std::array<Vec2D, 3> vecList = {p0, p1, p2};
 
     // Sort by Y
     std::sort(vecList.begin(), vecList.end(), [](const Vec2D& first, const Vec2D& second) -> bool {
@@ -86,15 +87,15 @@ void Engine3D::FillTriangleOld(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color)
 https://github.com/OneLoneCoder/Javidx9/blob/master/ConsoleGameEngine/olcConsoleGameEngine.h
 on line 537
 */
-void Engine3D::FillTriangle(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color)
+void Engine3D::FillTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
 {
-    int x1 = (int)v0.x;
-    int x2 = (int)v1.x;
-    int x3 = (int)v2.x;
-    int y1 = (int)v0.y;
-    int y2 = (int)v1.y;
-    int y3 = (int)v2.y;
-    auto SWAP = [](int &x, int &y) { int t = x; x = y; y = t; };
+    int x1 = (int)p0.x;
+    int x2 = (int)p1.x;
+    int x3 = (int)p2.x;
+    int y1 = (int)p0.y;
+    int y2 = (int)p1.y;
+    int y3 = (int)p2.y;
+    auto swap = [](int &x, int &y) { int t = x; x = y; y = t; };
     auto drawline = [&](int sx, int ex, int ny) { for (int i = sx; i <= ex; i++) RenderPoint({(float)i, (float)ny}, color); };
 
     int t1x, t2x, y, minx, maxx, t1xp, t2xp;
@@ -103,9 +104,9 @@ void Engine3D::FillTriangle(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color)
     int signx1, signx2, dx1, dy1, dx2, dy2;
     int e1, e2;
     // Sort vertices
-    if (y1>y2) { SWAP(y1, y2); SWAP(x1, x2); }
-    if (y1>y3) { SWAP(y1, y3); SWAP(x1, x3); }
-    if (y2>y3) { SWAP(y2, y3); SWAP(x2, x3); }
+    if (y1>y2) { swap(y1, y2); swap(x1, x2); }
+    if (y1>y3) { swap(y1, y3); swap(x1, x3); }
+    if (y2>y3) { swap(y2, y3); swap(x2, x3); }
 
     t1x = t2x = x1; y = y1;   // Starting points
     dx1 = (int)(x2 - x1); if (dx1<0) { dx1 = -dx1; signx1 = -1; }
@@ -117,11 +118,11 @@ void Engine3D::FillTriangle(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color)
     dy2 = (int)(y3 - y1);
 
     if (dy1 > dx1) {   // swap values
-        SWAP(dx1, dy1);
+        swap(dx1, dy1);
         changed1 = true;
     }
     if (dy2 > dx2) {   // swap values
-        SWAP(dy2, dx2);
+        swap(dy2, dx2);
         changed2 = true;
     }
 
@@ -180,7 +181,7 @@ next:
     t1x = x2;
 
     if (dy1 > dx1) {   // swap values
-        SWAP(dy1, dx1);
+        swap(dy1, dx1);
         changed1 = true;
     }
     else changed1 = false;
@@ -226,6 +227,199 @@ next:
         t2x += t2xp;
         y += 1;
         if (y>y3) return;
+    }
+}
+
+void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2D p2, TexUV tex2, Texture texture)
+{
+    // Convert positions to int
+    int x1 = (int)p0.x;
+    int x2 = (int)p1.x;
+    int x3 = (int)p2.x;
+    int y1 = (int)p0.y;
+    int y2 = (int)p1.y;
+    int y3 = (int)p2.y;
+
+    // Convert UVs to int
+    int u1 = (int)tex0.u;
+    int v1 = (int)tex0.v;
+    int w1 = (int)tex0.w;
+    int u2 = (int)tex1.u;
+    int v2 = (int)tex1.v;
+    int w2 = (int)tex1.w;
+    int u3 = (int)tex2.u;
+    int v3 = (int)tex2.v;
+    int w3 = (int)tex2.w;
+    if (y2 < y1)
+    {
+        std::swap(y1, y2);
+        std::swap(x1, x2);
+        std::swap(u1, u2);
+        std::swap(v1, v2);
+        std::swap(w1, w2);
+    }
+
+    if (y3 < y1)
+    {
+        std::swap(y1, y3);
+        std::swap(x1, x3);
+        std::swap(u1, u3);
+        std::swap(v1, v3);
+        std::swap(w1, w3);
+    }
+
+    if (y3 < y2)
+    {
+        std::swap(y2, y3);
+        std::swap(x2, x3);
+        std::swap(u2, u3);
+        std::swap(v2, v3);
+        std::swap(w2, w3);
+    }
+
+    int dy1 = y2 - y1;
+    int dx1 = x2 - x1;
+    float dv1 = v2 - v1;
+    float du1 = u2 - u1;
+    float dw1 = w2 - w1;
+
+    int dy2 = y3 - y1;
+    int dx2 = x3 - x1;
+    float dv2 = v3 - v1;
+    float du2 = u3 - u1;
+    float dw2 = w3 - w1;
+
+    float tex_u, tex_v, tex_w;
+
+    float dax_step = 0, dbx_step = 0,
+          du1_step = 0, dv1_step = 0,
+          du2_step = 0, dv2_step = 0,
+          dw1_step = 0, dw2_step = 0;
+
+    if (dy1) dax_step = dx1 / (float)abs(dy1);
+    if (dy2) dbx_step = dx2 / (float)abs(dy2);
+
+    if (dy1) du1_step = du1 / (float)abs(dy1);
+    if (dy1) dv1_step = dv1 / (float)abs(dy1);
+    if (dy1) dw1_step = dw1 / (float)abs(dy1);
+
+    if (dy2) du2_step = du2 / (float)abs(dy2);
+    if (dy2) dv2_step = dv2 / (float)abs(dy2);
+    if (dy2) dw2_step = dw2 / (float)abs(dy2);
+    printf("Done with diffs\n");
+
+    if (dy1)
+    {
+        printf("dy1 != 0\n");
+        for (int i = y1; i <= y2; i++)
+        {
+            int ax = x1 + (float)(i - y1) * dax_step;
+            int bx = x1 + (float)(i - y1) * dbx_step;
+
+            float tex_su = u1 + (float)(i - y1) * du1_step;
+            float tex_sv = v1 + (float)(i - y1) * dv1_step;
+            float tex_sw = w1 + (float)(i - y1) * dw1_step;
+
+            float tex_eu = u1 + (float)(i - y1) * du2_step;
+            float tex_ev = v1 + (float)(i - y1) * dv2_step;
+            float tex_ew = w1 + (float)(i - y1) * dw2_step;
+
+            if (ax > bx)
+            {
+                std::swap(ax, bx);
+                std::swap(tex_su, tex_eu);
+                std::swap(tex_sv, tex_ev);
+                std::swap(tex_sw, tex_ew);
+            }
+
+            tex_u = tex_su;
+            tex_v = tex_sv;
+            tex_w = tex_sw;
+
+            float tstep = 1.0f / ((float)(bx - ax));
+            float t = 0.0f;
+
+            for (int j = ax; j < bx; j++)
+            {
+                tex_u = (1.0f - t) * tex_su + t * tex_eu;
+                tex_v = (1.0f - t) * tex_sv + t * tex_ev;
+                tex_w = (1.0f - t) * tex_sw + t * tex_ew;
+                // if (tex_w > depthBuffer[i * _width + j])
+                // {
+                    printf("%.3f, %.3f, %.3f\n", tex_u, tex_v, tex_w);
+                    RenderPoint({(float)j, (float)i}, texture.GetPixelColor(tex_u / tex_w, tex_v / tex_w));
+                    // Draw(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w));
+                    // depthBuffer[i * _width + j] = tex_w;
+                // }
+                t += tstep;
+            }
+
+        }
+    }
+
+    dy1 = y3 - y2;
+    dx1 = x3 - x2;
+    dv1 = v3 - v2;
+    du1 = u3 - u2;
+    dw1 = w3 - w2;
+
+    if (dy1) dax_step = dx1 / (float)abs(dy1);
+    if (dy2) dbx_step = dx2 / (float)abs(dy2);
+
+    du1_step = 0, dv1_step = 0;
+    if (dy1) du1_step = du1 / (float)abs(dy1);
+    if (dy1) dv1_step = dv1 / (float)abs(dy1);
+    if (dy1) dw1_step = dw1 / (float)abs(dy1);
+    printf("Done with diffs 2\n");
+
+    if (dy1)
+    {
+        printf("dy1 != 0\n");
+        for (int i = y2; i <= y3; i++)
+        {
+            int ax = x2 + (float)(i - y2) * dax_step;
+            int bx = x1 + (float)(i - y1) * dbx_step;
+
+            float tex_su = u2 + (float)(i - y2) * du1_step;
+            float tex_sv = v2 + (float)(i - y2) * dv1_step;
+            float tex_sw = w2 + (float)(i - y2) * dw1_step;
+
+            float tex_eu = u1 + (float)(i - y1) * du2_step;
+            float tex_ev = v1 + (float)(i - y1) * dv2_step;
+            float tex_ew = w1 + (float)(i - y1) * dw2_step;
+
+            if (ax > bx)
+            {
+                std::swap(ax, bx);
+                std::swap(tex_su, tex_eu);
+                std::swap(tex_sv, tex_ev);
+                std::swap(tex_sw, tex_ew);
+            }
+
+            tex_u = tex_su;
+            tex_v = tex_sv;
+            tex_w = tex_sw;
+
+            float tstep = 1.0f / ((float)(bx - ax));
+            float t = 0.0f;
+
+            for (int j = ax; j < bx; j++)
+            {
+                tex_u = (1.0f - t) * tex_su + t * tex_eu;
+                tex_v = (1.0f - t) * tex_sv + t * tex_ev;
+                tex_w = (1.0f - t) * tex_sw + t * tex_ew;
+
+                // if (tex_w > depthBuffer[i * _width + j])
+                // {
+                    printf("%.3f, %.3f, %.3f\n", tex_u, tex_v, tex_w);
+                    RenderPoint({(float)j, (float)i}, texture.GetPixelColor(tex_u / tex_w, tex_v / tex_w));
+                    // depthBuffer[i * _width + j] = tex_w;
+                    // Draw(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w));
+                    // depthBuffer[i * _width + j] = tex_w;
+                // }
+                t += tstep;
+            }
+        }
     }
 }
 

@@ -11,7 +11,7 @@ public:
     // Create and destroy
     Engine3D();
     ~Engine3D();
-    bool init(int _width = 600, int _height = 600);
+    bool init(int width = 600, int height = 600);
 
     // Override methods
     void setup();
@@ -20,6 +20,12 @@ public:
 
     // Method to start engine
     void run();
+
+    // Window info
+    // void setWidth(int width) { _width = width; aspectRatio = _height / _width; }
+    // void setHeight(int height) { _height = height; aspectRatio = _height / _width; }
+    int getWidth() { return _width; }
+    int getHeight() { return _height; }
 
     // Input data
     Vec2D GetMousePos();
@@ -31,6 +37,7 @@ public:
     void RenderTriangle(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
     void FillTriangle(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
     void FillTriangleOld(Vec2D v0, Vec2D v1, Vec2D v2, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
+    void TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2D p2, TexUV tex2, Texture texture);
     // Rect
     void RenderRect(Vec2D pos, Vec2D size, int thickness = 0, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
     // Circle
@@ -53,7 +60,10 @@ private:
     SDL_Surface* windowSurface;
 
     // Window data
-    int width, height = 0;
+    int _width = 0, _height = 0;
+
+    // Depth buffer
+    float *depthBuffer = NULL;
 
     // Keyboard input
     const Uint8 *keyboardState;
@@ -65,7 +75,6 @@ private:
 
     // Camera
     Camera cam;
-    float aspectRatio;
 
     // Matrices
     Mat4x4 matProj;
@@ -80,19 +89,21 @@ private:
     Mat4x4 Matrix_QuickInverse(Mat4x4 m); // Only for Rotation/Translation Matrices
 
     // Vector operations
-    Vec3D Vector_IntersectPlane(Vec3D &plane_p, Vec3D &plane_n, Vec3D &lineStart, Vec3D &lineEnd);
+    Vec3D Vector_IntersectPlane(Vec3D &plane_p, Vec3D &plane_n, Vec3D &lineStart, Vec3D &lineEnd, float &t);
     int Triangle_ClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &in_tri, Triangle &out_tri1, Triangle &out_tri2);
 
     // Rendering related
     std::vector<Light> lights;
     Vec3D lightDirCorrect = {-1.0f, 1.0f, -1.0f};
 
+    // List of scene meshes
+    std::vector<Mesh> sceneMeshes;
+
     //-------------------//
     //      TESTING      //
     //-------------------//
-    std::vector<Mesh> sceneMeshes;
 
-
+    // Camera manipulation
     float theta = 0.0f;
     float yaw = 0.0f;
     float pitch = 0.0f;
