@@ -146,15 +146,19 @@ struct Triangle
     SDL_Color color = {255, 255, 255, SDL_ALPHA_OPAQUE};
 };
 
-struct Mesh
+class Mesh
 {
+public:
+    Mesh() {}
+    ~Mesh() {}
+
     std::vector<Triangle> tris;
-    Vec3D position = { 0.0f, 0.0f, 0.0f };
-    Vec3D rotation = { 0.0f, 0.0f, 0.0f };
+    Vec3D position = {0.0f, 0.0f, 0.0f};
+    Vec3D rotation = {0.0f, 0.0f, 0.0f};
     Vec3D size = {1.0f, 1.0f, 1.0f};
     Texture texture;
 
-    void setColor(SDL_Color color)
+    void SetColor(SDL_Color color)
     {
         for (auto& tri : tris)
         {
@@ -167,6 +171,9 @@ struct Mesh
         std::ifstream f(fileName);
         if (!f.is_open())
             return false;
+
+        // Clear tris
+        tris.clear();
 
         // Vertices
         std::vector<Vec3D> vertices;
@@ -208,8 +215,9 @@ struct Mesh
         return true;
     }
 
-    void toCube(Vec3D size = {1.0f, 1.0f, 1.0f})
+    void ToCube(Vec3D size = {1.0f, 1.0f, 1.0f})
     {
+        tris.clear();
         tris = {
             // FRONT
             { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
@@ -237,8 +245,12 @@ struct Mesh
 		};
     }
 
-    void toSphere(float radius, int resolution = 10)
+    void ToSphere(float radius, int resolution = 10)
     {
+        // Clear tris
+        tris.clear();
+
+        // Cache of vertices
         std::vector<Vec3D> vertices;
 
         // Create vertices
@@ -284,7 +296,6 @@ struct Mesh
         }
     }
 };
-
 
 struct Mat4x4
 {

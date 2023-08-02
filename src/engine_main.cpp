@@ -106,26 +106,27 @@ void Engine3D::setup()
     matProj = Matrix_Projection(cam);
 
     // Load block
-    // Mesh mesh;
-    // mesh.toCube();
-    // mesh.texture.init("assets/bmp/dirt.bmp");
-    // sceneMeshes.push_back(mesh);
+    Mesh mesh;
+    mesh.ToCube();
+    mesh.texture.init("assets/bmp/dirt.bmp");
+    sceneMeshes.push_back(mesh);
+    std::cout << sceneMeshes[0].texture.loaded << "\n";
 
     // Load blocks
-    float size = 5.0f;
-    float padding = .2f;
-    for (int i = 0; i < 10; i++)
-    {
-        for (int j = 0; j < 1; j++)
-        {
-            Mesh mesh;
-            mesh.toCube({size, size, size});
-            mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
-            // mesh.texture.init("assets/bmp/dirt.bmp");
+    // float size = 5.0f;
+    // float padding = .2f;
+    // Mesh mesh;
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     for (int j = 0; j < 1; j++)
+    //     {
+    //         mesh.ToCube({size, size, size});
+    //         mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
+    //         // mesh.texture.init("assets/bmp/dirt.bmp");
 
-            sceneMeshes.push_back(mesh);
-        }
-    }
+    //         sceneMeshes.push_back(mesh);
+    //     }
+    // }
 
     // Load mesh
     // Mesh dogMesh;
@@ -194,16 +195,17 @@ void Engine3D::update(float dt)
 
     theta += dt;
 
-    for (int i = 0; i < sceneMeshes.size(); i++)
+    for (auto& mesh : sceneMeshes)
     {
-        sceneMeshes[i].rotation.y += dt * .5f;
-        sceneMeshes[i].rotation.x += dt * .25f;
-        // sceneMeshes[i].rotation.y = SDL_powf(theta, 2.0f);
+        // mesh.rotation.y += dt * .5f;
+        // mesh.rotation.x += dt * .25f;
+        // mesh.rotation.y = SDL_powf(theta, 2.0f);
     }
 }
 
 void Engine3D::draw()
 {
+    // printf("Draw\n");
     // Clear screen
     Fill();
 
@@ -212,7 +214,7 @@ void Engine3D::draw()
         depthBuffer[i] = 0.0f;
 
     // Loop through every scene mesh
-    for (auto& mesh : sceneMeshes)
+    for (auto mesh : sceneMeshes)
     {
         // Apply rotation
         Mat4x4 matRotZ = Matrix_RotationZ(mesh.rotation.z);

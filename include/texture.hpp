@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <bits/stdc++.h>
 
 class Texture
 {
@@ -11,11 +12,16 @@ public:
     }
     ~Texture()
     {
-        if (surface)
-        {
-            SDL_FreeSurface(surface);
-            surface = NULL;
-        }
+        // printf("Freeing texture\n");
+        // if (surface)
+        // {
+        //     SDL_FreeSurface(surface);
+        //     surface = NULL;
+        // }
+
+        // loaded = false;
+        // width = 0;
+        // height = 0;
     }
 
     // Initialize texture
@@ -33,9 +39,9 @@ public:
         loaded = true;
         printf("%d, %d\n", surface->w, surface->h);
         width = surface->w; height = surface->h;
-        
+
         // Load color data
-        printf("Tex size: %ld\n", colors.size());
+        // printf("Tex size: %ld\n", colors.size());
         // int i = 0;
         // colors = std::vector<SDL_Color>(width * height);
         // for (int y = 0; y < height; y++)
@@ -71,8 +77,44 @@ public:
         }
 
         // Return color
-        return colors[sy * width + sx];
+        // return colors[sy * width + sx];
     }
+
+    // Copy-and-Swap idiom by GManNickG
+    // https://stackoverflow.com/questions/3279543/what-is-the-copy-and-swap-idiom
+    friend void swap(Texture& first, Texture& second)
+    {
+        using std::swap;
+
+        // by swapping the members of two objects,
+        // the two objects are effectively swapped
+        swap(first.loaded, second.loaded);
+        swap(first.width, second.width);
+        swap(first.height, second.height);
+        swap(first.surface, second.surface);
+    }
+
+    Texture& operator=(Texture other)
+    {
+        printf("copy assignment\n");
+        swap(*this, other);
+
+        return *this;
+    }
+
+    // copy-constructor
+    // Texture(const Texture& other)
+    //     : loaded(other.loaded),
+    //       width(other.width),
+    //       height(other.height)
+    //     //   mArray(mSize ? new int[mSize] : nullptr)
+    // {
+    //     printf("Copy ctor\n");
+    //     // note that this is non-throwing, because of the data
+    //     // types being used; more attention to detail with regards
+    //     // to exceptions must be given in a more general case, however
+    //     // std::copy(other.surface, other.surface, surface);
+    // }
 
     // If texture has been loaded
     bool loaded;
@@ -132,7 +174,7 @@ public:
         // Check if out of bounds
         if (x < 0 || x >= width || y < 0 || y >= height)
         {
-            printf("[ColorAt]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", x, y, width, height);
+            // printf("[ColorAt]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", x, y, width, height);
             return {0, 0, 0, 0};
         }
 
@@ -187,5 +229,5 @@ private:
     SDL_Surface *surface;
 
     // Array containing color value for each pixel
-    std::vector<SDL_Color> colors;
+    // std::vector<SDL_Color> colors;
 };
