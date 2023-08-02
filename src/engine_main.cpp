@@ -49,7 +49,7 @@ bool Engine3D::init(int width, int height)
 
     _width = width;
     _height = height;
-    // depthBuffer = new float[_width * _height];
+    depthBuffer = new float[_width * _height];
 
     return true;
 }
@@ -106,25 +106,26 @@ void Engine3D::setup()
     matProj = Matrix_Projection(cam);
 
     // Load block
-    Mesh mesh;
-    mesh.toCube();
-    // mesh.texture.init("assets/bmp/jotaro_cat.bmp");
-    sceneMeshes.push_back(mesh);
+    // Mesh mesh;
+    // mesh.toCube();
+    // mesh.texture.init("assets/bmp/dirt.bmp");
+    // sceneMeshes.push_back(mesh);
 
     // Load blocks
-    // float size = 5.0f;
-    // float padding = .2f;
-    // // for (int i = 0; i < 1; i++)
-    // // {
-    // //     for (int j = 0; j < 1; j++)
-    // //     {
-    // //         Mesh mesh;
-    // //         mesh.toCube({size, size, size});
-    // //         mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
+    float size = 5.0f;
+    float padding = .2f;
+    for (int i = 0; i < 10; i++)
+    {
+        for (int j = 0; j < 1; j++)
+        {
+            Mesh mesh;
+            mesh.toCube({size, size, size});
+            mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
+            // mesh.texture.init("assets/bmp/dirt.bmp");
 
-    // //         sceneMeshes.push_back(mesh);
-    // //     }
-    // // }
+            sceneMeshes.push_back(mesh);
+        }
+    }
 
     // Load mesh
     // Mesh dogMesh;
@@ -195,7 +196,8 @@ void Engine3D::update(float dt)
 
     for (int i = 0; i < sceneMeshes.size(); i++)
     {
-        // sceneMeshes[i].rotation.y += dt;
+        sceneMeshes[i].rotation.y += dt * .5f;
+        sceneMeshes[i].rotation.x += dt * .25f;
         // sceneMeshes[i].rotation.y = SDL_powf(theta, 2.0f);
     }
 }
@@ -204,6 +206,10 @@ void Engine3D::draw()
 {
     // Clear screen
     Fill();
+
+    // Clear depth buffer
+    for (int i = 0; i < _width * _height; i++)
+        depthBuffer[i] = 0.0f;
 
     // Loop through every scene mesh
     for (auto& mesh : sceneMeshes)
@@ -338,12 +344,9 @@ void Engine3D::draw()
             return z1 < z2;
         });
 
-        // Clear depth buffer
-        // for (int i = 0; i < _width * _height; i++)
-        //     depthBuffer[i] = 0.0f;
+        
 
         // Clipping
-        printf("%d tris\n", trianglesToRaster.size());
         for (Triangle& triToRaster : trianglesToRaster)
         {
             // Clip triangles against all four screen edges, this could
@@ -392,27 +395,32 @@ void Engine3D::draw()
             // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
             for (auto &t : listTriangles)
             {
-                // TexturedTriangle(
+                if (mesh.texture.loaded)
+                {
+                    TexturedTriangle(
+                        {t.p[0].x, t.p[0].y},
+                        t.t[0],
+                        {t.p[1].x, t.p[1].y},
+                        t.t[1],
+                        {t.p[2].x, t.p[2].y},
+                        t.t[2],
+                        mesh.texture
+                    );
+                } else {
+                    FillTriangle(
+                        {t.p[0].x, t.p[0].y},
+                        {t.p[1].x, t.p[1].y},
+                        {t.p[2].x, t.p[2].y},
+                        t.color
+                    );
+                }
+                
+                // RenderTriangle(
                 //     {t.p[0].x, t.p[0].y},
-                //     t.t[0],
-                //     {t.p[1].x, t.p[1].y},
-                //     t.t[1],
-                //     {t.p[2].x, t.p[2].y},
-                //     t.t[2],
-                //     mesh.texture
-                // );
-                // FillTriangle(
-                //     {t.p[0].x, t.p[0].y},
                 //     {t.p[1].x, t.p[1].y},
                 //     {t.p[2].x, t.p[2].y},
-                //     t.color
+                //     {255, 255, 255, 255}
                 // );
-                RenderTriangle(
-                    {t.p[0].x, t.p[0].y},
-                    {t.p[1].x, t.p[1].y},
-                    {t.p[2].x, t.p[2].y},
-                    {255, 255, 255, 255}
-                );
             }
         }
     }

@@ -47,7 +47,7 @@ void Engine3D::FillTriangleOld(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
     // Increment on X towards x1
     float incX0 = (vecList[1].x - vecList[0].x) / (float)diffY;
 
-    // Get X coordinate on Y-level of v1 on line from v0 to v2
+    // Get X coordinate on Y-level of v1 on line from v0 to tex1.v
     float x3 = vecList[0].x + (vecList[1].y - vecList[0].y) / (vecList[2].y - vecList[0].y) * (vecList[2].x - vecList[0].x);
 
     // Increment on X towards x3
@@ -173,61 +173,61 @@ void Engine3D::FillTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
         if (y == y2) break;
 
     }
-next:
-    // Second half
-    dx1 = (int)(x3 - x2); if (dx1<0) { dx1 = -dx1; signx1 = -1; }
-    else signx1 = 1;
-    dy1 = (int)(y3 - y2);
-    t1x = x2;
+    next:
+        // Second half
+        dx1 = (int)(x3 - x2); if (dx1<0) { dx1 = -dx1; signx1 = -1; }
+        else signx1 = 1;
+        dy1 = (int)(y3 - y2);
+        t1x = x2;
 
-    if (dy1 > dx1) {   // swap values
-        swap(dy1, dx1);
-        changed1 = true;
-    }
-    else changed1 = false;
-
-    e1 = (int)(dx1 >> 1);
-
-    for (int i = 0; i <= dx1; i++) {
-        t1xp = 0; t2xp = 0;
-        if (t1x<t2x) { minx = t1x; maxx = t2x; }
-        else { minx = t2x; maxx = t1x; }
-        // process first line until y value is about to change
-        while (i<dx1) {
-            e1 += dy1;
-            while (e1 >= dx1) {
-                e1 -= dx1;
-                if (changed1) { t1xp = signx1; break; }//t1x += signx1;
-                else          goto next3;
-            }
-            if (changed1) break;
-            else   	   	  t1x += signx1;
-            if (i<dx1) i++;
+        if (dy1 > dx1) {   // swap values
+            swap(dy1, dx1);
+            changed1 = true;
         }
-    next3:
-        // process second line until y value is about to change
-        while (t2x != x3) {
-            e2 += dy2;
-            while (e2 >= dx2) {
-                e2 -= dx2;
-                if (changed2) t2xp = signx2;
-                else          goto next4;
-            }
-            if (changed2)     break;
-            else              t2x += signx2;
-        }
-    next4:
+        else changed1 = false;
 
-        if (minx>t1x) minx = t1x; if (minx>t2x) minx = t2x;
-        if (maxx<t1x) maxx = t1x; if (maxx<t2x) maxx = t2x;
-        drawline(minx, maxx, y);   										
-        if (!changed1) t1x += signx1;
-        t1x += t1xp;
-        if (!changed2) t2x += signx2;
-        t2x += t2xp;
-        y += 1;
-        if (y>y3) return;
-    }
+        e1 = (int)(dx1 >> 1);
+
+        for (int i = 0; i <= dx1; i++) {
+            t1xp = 0; t2xp = 0;
+            if (t1x<t2x) { minx = t1x; maxx = t2x; }
+            else { minx = t2x; maxx = t1x; }
+            // process first line until y value is about to change
+            while (i<dx1) {
+                e1 += dy1;
+                while (e1 >= dx1) {
+                    e1 -= dx1;
+                    if (changed1) { t1xp = signx1; break; }//t1x += signx1;
+                    else          goto next3;
+                }
+                if (changed1) break;
+                else   	   	  t1x += signx1;
+                if (i<dx1) i++;
+            }
+        next3:
+            // process second line until y value is about to change
+            while (t2x != x3) {
+                e2 += dy2;
+                while (e2 >= dx2) {
+                    e2 -= dx2;
+                    if (changed2) t2xp = signx2;
+                    else          goto next4;
+                }
+                if (changed2)     break;
+                else              t2x += signx2;
+            }
+        next4:
+
+            if (minx>t1x) minx = t1x; if (minx>t2x) minx = t2x;
+            if (maxx<t1x) maxx = t1x; if (maxx<t2x) maxx = t2x;
+            drawline(minx, maxx, y);   										
+            if (!changed1) t1x += signx1;
+            t1x += t1xp;
+            if (!changed2) t2x += signx2;
+            t2x += t2xp;
+            y += 1;
+            if (y>y3) return;
+        }
 }
 
 void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2D p2, TexUV tex2, Texture texture)
@@ -240,54 +240,44 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
     int y2 = (int)p1.y;
     int y3 = (int)p2.y;
 
-    // Convert UVs to int
-    int u1 = (int)tex0.u;
-    int v1 = (int)tex0.v;
-    int w1 = (int)tex0.w;
-    int u2 = (int)tex1.u;
-    int v2 = (int)tex1.v;
-    int w2 = (int)tex1.w;
-    int u3 = (int)tex2.u;
-    int v3 = (int)tex2.v;
-    int w3 = (int)tex2.w;
     if (y2 < y1)
     {
         std::swap(y1, y2);
         std::swap(x1, x2);
-        std::swap(u1, u2);
-        std::swap(v1, v2);
-        std::swap(w1, w2);
+        std::swap(tex0.u, tex1.u);
+        std::swap(tex0.v, tex1.v);
+        std::swap(tex0.w, tex1.w);
     }
 
     if (y3 < y1)
     {
         std::swap(y1, y3);
         std::swap(x1, x3);
-        std::swap(u1, u3);
-        std::swap(v1, v3);
-        std::swap(w1, w3);
+        std::swap(tex0.u, tex2.u);
+        std::swap(tex0.v, tex2.v);
+        std::swap(tex0.w, tex2.w);
     }
 
     if (y3 < y2)
     {
         std::swap(y2, y3);
         std::swap(x2, x3);
-        std::swap(u2, u3);
-        std::swap(v2, v3);
-        std::swap(w2, w3);
+        std::swap(tex1.u, tex2.u);
+        std::swap(tex1.v, tex2.v);
+        std::swap(tex1.w, tex2.w);
     }
 
     int dy1 = y2 - y1;
     int dx1 = x2 - x1;
-    float dv1 = v2 - v1;
-    float du1 = u2 - u1;
-    float dw1 = w2 - w1;
+    float dv1 = tex1.v - tex0.v;
+    float du1 = tex1.u - tex0.u;
+    float dw1 = tex1.w - tex0.w;
 
     int dy2 = y3 - y1;
     int dx2 = x3 - x1;
-    float dv2 = v3 - v1;
-    float du2 = u3 - u1;
-    float dw2 = w3 - w1;
+    float dv2 = tex2.v - tex0.v;
+    float du2 = tex2.u - tex0.u;
+    float dw2 = tex2.w - tex0.w;
 
     float tex_u, tex_v, tex_w;
 
@@ -306,23 +296,23 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
     if (dy2) du2_step = du2 / (float)abs(dy2);
     if (dy2) dv2_step = dv2 / (float)abs(dy2);
     if (dy2) dw2_step = dw2 / (float)abs(dy2);
-    printf("Done with diffs\n");
 
     if (dy1)
     {
-        printf("dy1 != 0\n");
         for (int i = y1; i <= y2; i++)
         {
             int ax = x1 + (float)(i - y1) * dax_step;
             int bx = x1 + (float)(i - y1) * dbx_step;
 
-            float tex_su = u1 + (float)(i - y1) * du1_step;
-            float tex_sv = v1 + (float)(i - y1) * dv1_step;
-            float tex_sw = w1 + (float)(i - y1) * dw1_step;
+            if (ax == bx) continue;
 
-            float tex_eu = u1 + (float)(i - y1) * du2_step;
-            float tex_ev = v1 + (float)(i - y1) * dv2_step;
-            float tex_ew = w1 + (float)(i - y1) * dw2_step;
+            float tex_su = tex0.u + (float)(i - y1) * du1_step;
+            float tex_sv = tex0.v + (float)(i - y1) * dv1_step;
+            float tex_sw = tex0.w + (float)(i - y1) * dw1_step;
+
+            float tex_eu = tex0.u + (float)(i - y1) * du2_step;
+            float tex_ev = tex0.v + (float)(i - y1) * dv2_step;
+            float tex_ew = tex0.w + (float)(i - y1) * dw2_step;
 
             if (ax > bx)
             {
@@ -344,13 +334,19 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
                 tex_u = (1.0f - t) * tex_su + t * tex_eu;
                 tex_v = (1.0f - t) * tex_sv + t * tex_ev;
                 tex_w = (1.0f - t) * tex_sw + t * tex_ew;
-                // if (tex_w > depthBuffer[i * _width + j])
-                // {
-                    printf("%.3f, %.3f, %.3f\n", tex_u, tex_v, tex_w);
-                    RenderPoint({(float)j, (float)i}, texture.GetPixelColor(tex_u / tex_w, tex_v / tex_w));
-                    // Draw(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w));
-                    // depthBuffer[i * _width + j] = tex_w;
-                // }
+
+                if (tex_w > depthBuffer[i * _width + j])
+                {
+                    if (tex_w)
+                    {
+                        int x = (int)(tex_u / tex_w * texture.width);
+                        int y = (int)(tex_v / tex_w * texture.height);
+                        // SDL_Color color = texture.GetPixelColor(tex_u / tex_w, tex_v / tex_w);
+                        SDL_Color color = texture.GetColorAt(x, y);
+                        RenderPoint({(float)j, (float)i}, color);
+                        depthBuffer[i * _width + j] = tex_w;
+                    }
+                }
                 t += tstep;
             }
 
@@ -359,9 +355,9 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
 
     dy1 = y3 - y2;
     dx1 = x3 - x2;
-    dv1 = v3 - v2;
-    du1 = u3 - u2;
-    dw1 = w3 - w2;
+    dv1 = tex2.v - tex1.v;
+    du1 = tex2.u - tex1.u;
+    dw1 = tex2.w - tex1.w;
 
     if (dy1) dax_step = dx1 / (float)abs(dy1);
     if (dy2) dbx_step = dx2 / (float)abs(dy2);
@@ -370,23 +366,23 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
     if (dy1) du1_step = du1 / (float)abs(dy1);
     if (dy1) dv1_step = dv1 / (float)abs(dy1);
     if (dy1) dw1_step = dw1 / (float)abs(dy1);
-    printf("Done with diffs 2\n");
 
     if (dy1)
     {
-        printf("dy1 != 0\n");
         for (int i = y2; i <= y3; i++)
         {
             int ax = x2 + (float)(i - y2) * dax_step;
             int bx = x1 + (float)(i - y1) * dbx_step;
 
-            float tex_su = u2 + (float)(i - y2) * du1_step;
-            float tex_sv = v2 + (float)(i - y2) * dv1_step;
-            float tex_sw = w2 + (float)(i - y2) * dw1_step;
+            if (ax == bx) continue;
 
-            float tex_eu = u1 + (float)(i - y1) * du2_step;
-            float tex_ev = v1 + (float)(i - y1) * dv2_step;
-            float tex_ew = w1 + (float)(i - y1) * dw2_step;
+            float tex_su = tex1.u + (float)(i - y2) * du1_step;
+            float tex_sv = tex1.v + (float)(i - y2) * dv1_step;
+            float tex_sw = tex1.w + (float)(i - y2) * dw1_step;
+
+            float tex_eu = tex0.u + (float)(i - y1) * du2_step;
+            float tex_ev = tex0.v + (float)(i - y1) * dv2_step;
+            float tex_ew = tex0.w + (float)(i - y1) * dw2_step;
 
             if (ax > bx)
             {
@@ -409,14 +405,15 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
                 tex_v = (1.0f - t) * tex_sv + t * tex_ev;
                 tex_w = (1.0f - t) * tex_sw + t * tex_ew;
 
-                // if (tex_w > depthBuffer[i * _width + j])
-                // {
-                    printf("%.3f, %.3f, %.3f\n", tex_u, tex_v, tex_w);
-                    RenderPoint({(float)j, (float)i}, texture.GetPixelColor(tex_u / tex_w, tex_v / tex_w));
-                    // depthBuffer[i * _width + j] = tex_w;
-                    // Draw(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w));
-                    // depthBuffer[i * _width + j] = tex_w;
-                // }
+                if (tex_w > depthBuffer[i * _width + j])
+                {
+                    if (tex_w)
+                    {
+                        SDL_Color color = texture.GetPixelColor(tex_u / tex_w, tex_v / tex_w);
+                        RenderPoint({(float)j, (float)i}, color);
+                        depthBuffer[i * _width + j] = tex_w;
+                    }
+                }
                 t += tstep;
             }
         }

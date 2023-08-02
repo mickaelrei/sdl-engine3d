@@ -8,7 +8,6 @@ public:
     {
         loaded = false;
         surface = NULL;
-        colors = NULL;
     }
     ~Texture()
     {
@@ -16,11 +15,6 @@ public:
         {
             SDL_FreeSurface(surface);
             surface = NULL;
-        }
-        if (colors)
-        {
-            free(colors);
-            colors = NULL;
         }
     }
 
@@ -36,19 +30,23 @@ public:
         }
 
         // Set size
-        printf("Loaded! Size: %d, %d\n", surface->w, surface->h);
         loaded = true;
+        printf("%d, %d\n", surface->w, surface->h);
         width = surface->w; height = surface->h;
         
         // Load color data
-        int i = 0;
-        colors = new SDL_Color[width * height];
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-                colors[i++] = ColorAt(x, y);
-        }
-        printf("Set colors\n");
+        printf("Tex size: %ld\n", colors.size());
+        // int i = 0;
+        // colors = std::vector<SDL_Color>(width * height);
+        // for (int y = 0; y < height; y++)
+        // {
+        //     for (int x = 0; x < width; x++)
+        //     {
+        //         Uint8 r, g, b, a;
+        //         SDL_Color color = GetColorAt(x, y);
+        //         colors[y * width + x] = color;
+        //     }
+        // }
 
         return loaded;
     }
@@ -68,7 +66,7 @@ public:
         int sy = (int)(y * (float)height);
         if (sx < 0 || sx >= width || sy < 0 || sy >= height)
         {
-            printf("[GetPixelColor]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", sx, sy, width, height);
+            // printf("[GetPixelColor]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", sx, sy, width, height);
             return {0};
         }
 
@@ -79,11 +77,13 @@ public:
     // If texture has been loaded
     bool loaded;
 
-private:
+    // Surface size
+    int width = 0, height = 0;
+
     // Get color at given coordinate
     // Made by Daniel1985
     // https://discourse.libsdl.org/t/how-do-i-get-the-rgb-values-of-a-pixel-from-a-given-surface-and-x-and-y-coordinates-in-sdl2/26915
-    SDL_Color ColorAt(const int x, const int y)
+    SDL_Color ColorAt(int x, int y)
     {
         // Check if not loaded
         if (!loaded || !surface)
@@ -100,7 +100,7 @@ private:
         }
 
         // Bytes per pixel
-        const Uint8 Bpp = surface->format->BytesPerPixel;
+        Uint8 Bpp = surface->format->BytesPerPixel;
 
         /*
         Retrieve the address to a specific pixel
@@ -120,12 +120,72 @@ private:
         return Color;
     }
 
+    SDL_Color GetColorAt(int x, int y)
+    {
+        // Check if not loaded
+        if (!loaded || !surface)
+        {
+            printf("Not loaded\n");
+            return {0, 0, 0, 0};
+        }
+
+        // Check if out of bounds
+        if (x < 0 || x >= width || y < 0 || y >= height)
+        {
+            printf("[ColorAt]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", x, y, width, height);
+            return {0, 0, 0, 0};
+        }
+
+        // Declare color
+        SDL_Color rgb;
+
+        // Get pixel data
+        Uint32 data = GetPixel(x, y);
+
+        // Get RGB
+        SDL_GetRGB(data, surface->format, &rgb.r, &rgb.g, &rgb.b);
+
+        // Set alpha to max
+        rgb.a = SDL_ALPHA_OPAQUE;
+        return rgb;
+    }
+private:
+    // Get pixel data
+    Uint32 GetPixel(int x, int y)
+    {
+        int bpp = surface->format->BytesPerPixel;
+        /* Here p is the address to the pixel we want to retrieve */
+        Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+        switch (bpp)
+        {
+            case 1:
+                return *p;
+                break;
+
+            case 2:
+                return *(Uint16 *)p;
+                break;
+
+            case 3:
+                if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
+                    return p[0] << 16 | p[1] << 8 | p[2];
+                else
+                    return p[0] | p[1] << 8 | p[2] << 16;
+                    break;
+
+            case 4:
+                return *(Uint32 *)p;
+                break;
+
+            default:
+                return 0;       /* shouldn't happen, but avoids warnings */
+        }
+    }
+
     // Surface loaded from file
     SDL_Surface *surface;
 
-    // Surface size
-    int width = 0, height = 0;
-
     // Array containing color value for each pixel
-    SDL_Color *colors;
+    std::vector<SDL_Color> colors;
 };
