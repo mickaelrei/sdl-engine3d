@@ -335,8 +335,8 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
                 tex_v = (1.0f - t) * tex_sv + t * tex_ev;
                 tex_w = (1.0f - t) * tex_sw + t * tex_ew;
 
-                // if (tex_w > depthBuffer[i * _width + j])
-                // {
+                if (tex_w < depthBuffer[i * _width + j])
+                {
                     // if (tex_w)
                     // {
                         int x = (int)(tex_u / tex_w * texture.width);
@@ -347,7 +347,7 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
 
                         depthBuffer[i * _width + j] = tex_w;
                     // }
-                // }
+                }
                 t += tstep;
             }
 
@@ -406,8 +406,8 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
                 tex_v = (1.0f - t) * tex_sv + t * tex_ev;
                 tex_w = (1.0f - t) * tex_sw + t * tex_ew;
 
-                // if (tex_w > depthBuffer[i * _width + j])
-                // {
+                if (tex_w < depthBuffer[i * _width + j])
+                {
                     // if (tex_w)
                     // {
                         int x = (int)(tex_u / tex_w * texture.width);
@@ -418,7 +418,7 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
 
                         depthBuffer[i * _width + j] = tex_w;
                     // }
-                // }
+                }
                 t += tstep;
             }
         }

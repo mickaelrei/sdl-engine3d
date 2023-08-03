@@ -94,9 +94,6 @@ struct Vec2D
 {
     float x, y = 0;
 
-    Vec2D(const float& _x, const float& _y) { x = _x; y = _y; }
-    Vec2D(const Vec2D& v) { x = v.x; y = v.y; }
-
     // Vec2D to Vec2D operators
     Vec2D operator + (const Vec2D& other) { return { this->x + other.x, this->y + other.y }; }
     Vec2D operator - (const Vec2D& other) { return { this->x - other.x, this->y - other.y }; }
@@ -481,4 +478,13 @@ struct Light
 {
     Vec3D dir = {0};
     float brightness = 0.0f;
+};
+
+struct MouseState
+{
+    bool left = false;
+    bool right = false;
+    bool middle = false;
+    bool x1 = false;
+    bool x2 = false;
 };

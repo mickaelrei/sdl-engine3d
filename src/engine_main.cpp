@@ -90,6 +90,50 @@ Vec2D Engine3D::GetMousePos()
     return {(float)x, (float)y};
 }
 
+void Engine3D::MouseDown(SDL_MouseButtonEvent button)
+{
+    switch (button.button)
+    {
+        case SDL_BUTTON_LEFT:
+            mouseState.left = true;
+            break;
+        case SDL_BUTTON_MIDDLE:
+            mouseState.middle = true;
+            break;
+        case SDL_BUTTON_RIGHT:
+            mouseState.right = true;
+            break;
+        case SDL_BUTTON_X1:
+            mouseState.x1 = true;
+            break;
+        case SDL_BUTTON_X2:
+            mouseState.x2 = true;
+            break;
+    }
+}
+
+void Engine3D::MouseUp(SDL_MouseButtonEvent button)
+{
+    switch (button.button)
+    {
+        case SDL_BUTTON_LEFT:
+            mouseState.left = false;
+            break;
+        case SDL_BUTTON_MIDDLE:
+            mouseState.middle = false;
+            break;
+        case SDL_BUTTON_RIGHT:
+            mouseState.right = false;
+            break;
+        case SDL_BUTTON_X1:
+            mouseState.x1 = false;
+            break;
+        case SDL_BUTTON_X2:
+            mouseState.x2 = false;
+            break;
+    }
+}
+
 // Performance
 void Engine3D::SetFPS(int fps)
 {
@@ -103,15 +147,26 @@ void Engine3D::SetFPS(int fps)
 // Methods to be overriden
 void Engine3D::setup()
 {
-    // Set camera info
-    cam.pos = {0.0f, 0.0f, -0.7f};
+    // Set last mouse pos
+    lastMousePos = GetMousePos();
 
-    // Load mesh
+    // Set camera info
+    cam.pos = {0.0f, 0.0f, -15.0f};
+
+    // Load cubes
+    float size = 1.0f;
     Mesh mesh;
-    mesh.LoadFromOBJFile("assets/obj/messi.obj", true);
-    mesh.rotation.y = M_PI;
-    mesh.texture.init("assets/bmp/messi.bmp");
-    sceneMeshes.push_back(mesh);
+    mesh.ToCube({size, size, size});
+    mesh.size = {size, size, size};
+    mesh.texture.init("assets/bmp/dirt.bmp");
+    for (int i = -0; i < 10; i++)
+    {
+        for (int j = 0; j < 1; j++)
+        {
+            mesh.position = {i * size, 0.0f, j * size};
+            sceneMeshes.push_back(mesh);
+        }
+    }
 
     // Load mesh
     // Mesh dogMesh;
@@ -153,16 +208,32 @@ void Engine3D::setup()
 void Engine3D::update(float dt)
 {
     Vec3D right = cam.forward.cross(cam.up);
-    float speed = 2.1f;
-    float turnSpeed = 1.8f;
-    if (keyboardState[SDL_SCANCODE_UP])
-        pitch -= turnSpeed * dt * .25f;
-    if (keyboardState[SDL_SCANCODE_DOWN])
-        pitch += turnSpeed * dt * .25f;
-    if (keyboardState[SDL_SCANCODE_LEFT])
-        yaw -= turnSpeed * dt;
-    if (keyboardState[SDL_SCANCODE_RIGHT])
-        yaw += turnSpeed * dt;
+    float speed = 20.1f;
+    float turnSpeed = .01f;
+
+    // Rotating with keyboard
+    // if (keyboardState[SDL_SCANCODE_UP])
+    //     pitch -= turnSpeed * dt * .25f;
+    // if (keyboardState[SDL_SCANCODE_DOWN])
+    //     pitch += turnSpeed * dt * .25f;
+    // if (keyboardState[SDL_SCANCODE_LEFT])
+    //     yaw -= turnSpeed * dt;
+    // if (keyboardState[SDL_SCANCODE_RIGHT])
+    //     yaw += turnSpeed * dt;
+
+    // Get mouse pos
+    Vec2D mousePos = GetMousePos();
+
+    // Get change since last pos
+    Vec2D mouseRel = mousePos - lastMousePos;
+    lastMousePos = mousePos;
+
+    // Rotating with mouse
+    SDL_SetRelativeMouseMode(mouseState.right ? SDL_TRUE : SDL_FALSE);
+    if (mouseState.right)
+        yaw += mouseRel.x * turnSpeed;
+
+    // Moving left, right, front and back
     if (keyboardState[SDL_SCANCODE_A])
         cam.pos -= right * speed * dt;
     if (keyboardState[SDL_SCANCODE_D])
@@ -171,19 +242,31 @@ void Engine3D::update(float dt)
         cam.pos += cam.forward * speed * dt;
     if (keyboardState[SDL_SCANCODE_S])
         cam.pos -= cam.forward * speed * dt;
+
+    // Moving up and down
     if (keyboardState[SDL_SCANCODE_Q])
         cam.pos.y -= speed * dt;
     if (keyboardState[SDL_SCANCODE_E])
         cam.pos.y += speed * dt;
+
+    // Close
     if (keyboardState[SDL_SCANCODE_ESCAPE])
         running = false;
+    
 
-    theta += dt;
+    theta += dt * 2.5f;
 
-    for (auto& mesh : sceneMeshes)
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     for (int j = 0; j < 10; j++)
+    //     {
+    //         sceneMeshes[i * 10 + j].position.y = SDL_sinf(theta + j * .3f + i * .3f) * 3.0f;
+    //     }
+    // }
+
+    for (int i = 0; i < sceneMeshes.size(); i++)
     {
-        mesh.rotation.y += dt * 1.5f;
-        // mesh.rotation.y = SDL_powf(theta, 2.0f);
+        sceneMeshes[i].position.y = SDL_powf(i - sceneMeshes.size() * .5f, 2.0f);
     }
 }
 
@@ -195,7 +278,7 @@ void Engine3D::draw()
 
     // Clear depth buffer
     for (int i = 0; i < _width * _height; i++)
-        depthBuffer[i] = 0.0f;
+        depthBuffer[i] = 999999999999999999.9f;
 
     // Loop through every scene mesh
     for (auto mesh : sceneMeshes)
@@ -434,6 +517,10 @@ void Engine3D::run()
         {
             if (e.type == SDL_QUIT)
                 running = false;
+            else if (e.type == SDL_MOUSEBUTTONDOWN)
+                MouseDown(e.button);
+            else if (e.type == SDL_MOUSEBUTTONUP)
+                MouseUp(e.button);
         }
 
         // Update ticks

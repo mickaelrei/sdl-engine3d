@@ -68,6 +68,12 @@ private:
     // Keyboard input
     const Uint8 *keyboardState;
 
+    // Mouse state
+    void MouseUp(SDL_MouseButtonEvent button);
+    void MouseDown(SDL_MouseButtonEvent button);
+    MouseState mouseState;
+    Vec2D lastMousePos;
+
     // Performance data
     Uint32 delay_ms = 0;
     Uint32 lastTick, nowTick;
