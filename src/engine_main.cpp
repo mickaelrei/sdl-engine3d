@@ -47,9 +47,13 @@ bool Engine3D::init(int width, int height)
         return false;
     }
 
+    // Set size
     _width = width;
     _height = height;
     depthBuffer = new float[_width * _height];
+
+    // Set matrices
+    matProj = Matrix_Projection(cam);
 
     return true;
 }
@@ -100,50 +104,14 @@ void Engine3D::SetFPS(int fps)
 void Engine3D::setup()
 {
     // Set camera info
-    cam.pos = {0.0f, 0.0f, -15.0f};
+    cam.pos = {0.0f, 0.0f, -0.7f};
 
-    // Set matrices
-    matProj = Matrix_Projection(cam);
-
+    // Load mesh
     Mesh mesh;
-    // mesh.size = {.2f, .2f, .2f};
-    mesh.LoadFromOBJFile("assets/obj/block.obj", true);
-    mesh.texture.init("assets/bmp/block_tex.bmp");
+    mesh.LoadFromOBJFile("assets/obj/messi.obj", true);
+    mesh.rotation.y = M_PI;
+    mesh.texture.init("assets/bmp/messi.bmp");
     sceneMeshes.push_back(mesh);
-
-    // for (int i = 3; i < 25; i++)
-    // {
-    //     mesh.ToSphere(5.0f, i);
-    //     mesh.position.x = (i - 3) * -5.5f;
-    //     sceneMeshes.push_back(mesh);
-    // }
-
-    // mesh.ToSphere(5.0f, 5);
-    // mesh.texture.init("assets/bmp/dirt.bmp");
-    // mesh.rotation.x = M_PI * .5f;
-    // sceneMeshes.push_back(mesh);
-
-    // Mesh mesh0;
-    // mesh0.ToSphere(15.0f, 5);
-    // mesh0.texture.init("assets/bmp/felpes.bmp");
-    // mesh0.rotation.x = M_PI * .5f;
-    // sceneMeshes.push_back(mesh0);
-
-    // Load blocks
-    // float size = 5.0f;
-    // float padding = .2f;
-    // Mesh mesh;
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     for (int j = 0; j < 1; j++)
-    //     {
-    //         mesh.ToCube({size, size, size});
-    //         mesh.position = {i * (size + padding), 0.0f, j * (size + padding)};
-    //         // mesh.texture.init("assets/bmp/dirt.bmp");
-
-    //         sceneMeshes.push_back(mesh);
-    //     }
-    // }
 
     // Load mesh
     // Mesh dogMesh;
@@ -185,8 +153,8 @@ void Engine3D::setup()
 void Engine3D::update(float dt)
 {
     Vec3D right = cam.forward.cross(cam.up);
-    float speed = 15.0f;
-    float turnSpeed = 3.0f;
+    float speed = 2.1f;
+    float turnSpeed = 1.8f;
     if (keyboardState[SDL_SCANCODE_UP])
         pitch -= turnSpeed * dt * .25f;
     if (keyboardState[SDL_SCANCODE_DOWN])
@@ -212,16 +180,9 @@ void Engine3D::update(float dt)
 
     theta += dt;
 
-    // sceneMeshes[0].position = {
-    //     SDL_cosf(theta) * 20.0f,
-    //     0.0f,
-    //     SDL_sinf(theta) * 20.0f,
-    // };
-
     for (auto& mesh : sceneMeshes)
     {
-        // mesh.rotation.y += dt * .5f;
-        // mesh.rotation.x += dt * .25f;
+        mesh.rotation.y += dt * 1.5f;
         // mesh.rotation.y = SDL_powf(theta, 2.0f);
     }
 }

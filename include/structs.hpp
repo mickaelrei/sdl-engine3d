@@ -190,19 +190,19 @@ public:
 			{
 				if (line[1] == 't')
 				{
-					TexUV v;
-					s >> junk >> junk >> v.u >> v.v;
-					// A little hack for the spyro texture
-					//v.u = 1.0f - v.u;
-					//v.v = 1.0f - v.v;
-                    // v.w = 1.0f;
-					texs.push_back(v);
+					TexUV tex;
+					s >> junk >> junk >> tex.u >> tex.v;
+
+                    // Y axis starts at the bottom for UVs, so invert V
+                    tex.v = 1.0f - tex.v;
+                    tex.w = 1.0f;
+					texs.push_back(tex);
 				}
 				else
 				{
-					Vec3D v;
-					s >> junk >> v.x >> v.y >> v.z;
-					verts.push_back(v);
+					Vec3D vert;
+					s >> junk >> vert.x >> vert.y >> vert.z;
+					verts.push_back(vert);
 				}
 			}
 
