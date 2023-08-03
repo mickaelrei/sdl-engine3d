@@ -166,82 +166,112 @@ public:
         }
     }
 
-    bool LoadFromOBJFile(std::string fileName)
+    bool LoadFromOBJFile(std::string fileName, bool hasTexture = false)
     {
         std::ifstream f(fileName);
-        if (!f.is_open())
-            return false;
+		if (!f.is_open())
+			return false;
 
-        // Clear tris
-        tris.clear();
+		// Local cache of verts
+		std::vector<Vec3D> verts;
+		std::vector<TexUV> texs;
 
-        // Vertices
-        std::vector<Vec3D> vertices;
+		while (!f.eof())
+		{
+			char line[128];
+			f.getline(line, 128);
 
-        // Keep reading until end of file
-        while (!f.eof())
-        {
-            char line[128];
-            f.getline(line, 128);
+			std::stringstream s;
+			s << line;
 
-            // Get line
-            std::stringstream s;
-            s << line;
+			char junk;
 
-            // First character
-            std::string junk;
-
-            if (line[0] == 'v')
-            {
-                // Create vertex
-                Vec3D v;
-                s >> junk >> v.x >> v.y >> v.z;
-                vertices.push_back(v);
-            }
+			if (line[0] == 'v')
+			{
+				if (line[1] == 't')
+				{
+					TexUV v;
+					s >> junk >> junk >> v.u >> v.v;
+					// A little hack for the spyro texture
+					//v.u = 1.0f - v.u;
+					//v.v = 1.0f - v.v;
+                    // v.w = 1.0f;
+					texs.push_back(v);
+				}
+				else
+				{
+					Vec3D v;
+					s >> junk >> v.x >> v.y >> v.z;
+					verts.push_back(v);
+				}
+			}
 
             if (line[0] == 'f')
             {
-                // Add face/triangle
-                int f[3];
-                s >> junk >> f[0] >> f[1] >> f[2];
-                tris.push_back({
-                    vertices[f[0] - 1],
-                    vertices[f[1] - 1],
-                    vertices[f[2] - 1]
-                });
-            }
-        }
+                if (!hasTexture)
+                {
+                    int f[3];
+                    s >> junk >> f[0] >> f[1] >> f[2];
+                    tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
+                }
+                else
+                {
+                    s >> junk;
 
-        return true;
+                    std::string tokens[6];
+                    int nTokenCount = -1;
+
+                    while (!s.eof())
+                    {
+                        char c = s.get();
+                        if (c == ' ' || c == '/')
+                            nTokenCount++;
+                        else
+                            tokens[nTokenCount].append(1, c);
+                    }
+                    tokens[nTokenCount].pop_back();
+
+                    tris.push_back({
+                        verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1],     // Verts
+                        texs[stoi(tokens[1]) - 1], texs[stoi(tokens[3]) - 1], texs[stoi(tokens[5]) - 1]         // UVs
+                    });
+                }
+            }
+		}
+		return true;
     }
 
     void ToCube(Vec3D size = {1.0f, 1.0f, 1.0f})
     {
         tris.clear();
+
+        float halfX = size.x * .5f;
+        float halfY = size.y * .5f;
+        float halfZ = size.z * .5f;
         tris = {
             // FRONT
-            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
-            { -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
+            { -halfX, -halfY, -halfZ, 1.0f,    -halfX,  halfY, -halfZ, 1.0f,    halfX,  halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            { -halfX, -halfY, -halfZ, 1.0f,     halfX,  halfY, -halfZ, 1.0f,    halfX, -halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
             // RIGHT
-            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
-            {  0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
+            {  halfX, -halfY, -halfZ, 1.0f,     halfX,  halfY, -halfZ, 1.0f,    halfX,  halfY,  halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            {  halfX, -halfY, -halfZ, 1.0f,     halfX,  halfY,  halfZ, 1.0f,    halfX, -halfY,  halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
             // BACK
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
+            {  halfX, -halfY,  halfZ, 1.0f,     halfX,  halfY,  halfZ, 1.0f,   -halfX,  halfY,  halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            {  halfX, -halfY,  halfZ, 1.0f,    -halfX,  halfY,  halfZ, 1.0f,   -halfX, -halfY,  halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
             // LEFT
-            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
-            { -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
+            { -halfX, -halfY,  halfZ, 1.0f,    -halfX,  halfY,  halfZ, 1.0f,   -halfX,  halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            { -halfX, -halfY,  halfZ, 1.0f,    -halfX,  halfY, -halfZ, 1.0f,   -halfX, -halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
             // TOP
-            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    -0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
-            { -0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,     0.5f * size.x,  0.5f * size.y,  0.5f * size.z, 1.0f,    0.5f * size.x,  0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
+            { -halfX,  halfY, -halfZ, 1.0f,    -halfX,  halfY,  halfZ, 1.0f,    halfX,  halfY,  halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            { -halfX,  halfY, -halfZ, 1.0f,     halfX,  halfY,  halfZ, 1.0f,    halfX,  halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 
             // BOTTOM
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,   -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
-            {  0.5f * size.x, -0.5f * size.y,  0.5f * size.z, 1.0f,    -0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.5f * size.x, -0.5f * size.y, -0.5f * size.z, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
+            {  halfX, -halfY,  halfZ, 1.0f,    -halfX, -halfY,  halfZ, 1.0f,   -halfX, -halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     0.0f, 0.0f, 1.0f,     1.0f, 0.0f, 1.0f },
+            {  halfX, -halfY,  halfZ, 1.0f,    -halfX, -halfY, -halfZ, 1.0f,    halfX, -halfY, -halfZ, 1.0f,    0.0f, 1.0f, 1.0f,     1.0f, 0.0f, 1.0f,     1.0f, 1.0f, 1.0f },
 		};
     }
 
@@ -285,12 +315,18 @@ public:
                 tris.push_back({
                     vertices[i0],
                     vertices[i1],
-                    vertices[i2]
+                    vertices[i3],
+                    TexUV{0.0f, 1.0f, 1.0f},
+                    TexUV{0.0f, 0.0f, 1.0f},
+                    TexUV{1.0f, 0.0f, 1.0f}
                 });
                 tris.push_back({
+                    vertices[i0],
+                    vertices[i3],
                     vertices[i2],
-                    vertices[i1],
-                    vertices[i3]
+                    TexUV{0.0f, 1.0f, 1.0f},
+                    TexUV{1.0f, 0.0f, 1.0f},
+                    TexUV{1.0f, 1.0f, 1.0f}
                 });
             }
         }

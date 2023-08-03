@@ -105,12 +105,29 @@ void Engine3D::setup()
     // Set matrices
     matProj = Matrix_Projection(cam);
 
-    // Load block
     Mesh mesh;
-    mesh.ToCube();
-    mesh.texture.init("assets/bmp/dirt.bmp");
+    // mesh.size = {.2f, .2f, .2f};
+    mesh.LoadFromOBJFile("assets/obj/block.obj", true);
+    mesh.texture.init("assets/bmp/block_tex.bmp");
     sceneMeshes.push_back(mesh);
-    std::cout << sceneMeshes[0].texture.loaded << "\n";
+
+    // for (int i = 3; i < 25; i++)
+    // {
+    //     mesh.ToSphere(5.0f, i);
+    //     mesh.position.x = (i - 3) * -5.5f;
+    //     sceneMeshes.push_back(mesh);
+    // }
+
+    // mesh.ToSphere(5.0f, 5);
+    // mesh.texture.init("assets/bmp/dirt.bmp");
+    // mesh.rotation.x = M_PI * .5f;
+    // sceneMeshes.push_back(mesh);
+
+    // Mesh mesh0;
+    // mesh0.ToSphere(15.0f, 5);
+    // mesh0.texture.init("assets/bmp/felpes.bmp");
+    // mesh0.rotation.x = M_PI * .5f;
+    // sceneMeshes.push_back(mesh0);
 
     // Load blocks
     // float size = 5.0f;
@@ -194,6 +211,12 @@ void Engine3D::update(float dt)
         running = false;
 
     theta += dt;
+
+    // sceneMeshes[0].position = {
+    //     SDL_cosf(theta) * 20.0f,
+    //     0.0f,
+    //     SDL_sinf(theta) * 20.0f,
+    // };
 
     for (auto& mesh : sceneMeshes)
     {
