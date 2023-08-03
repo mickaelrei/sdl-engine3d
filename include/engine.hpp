@@ -109,6 +109,8 @@ private:
     //      TESTING      //
     //-------------------//
 
+    bool drawWireframe = false;
+
     // Camera manipulation
     float theta = 0.0f;
     float yaw = 0.0f;

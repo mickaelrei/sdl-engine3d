@@ -163,11 +163,15 @@ public:
         }
     }
 
-    bool LoadFromOBJFile(std::string fileName, bool hasTexture = false)
+    bool LoadFromOBJFile(std::string fileName)
     {
         std::ifstream f(fileName);
 		if (!f.is_open())
 			return false;
+
+        // Check if file has UVs and normals
+        bool hasTexture = false;
+        bool hasNormals = false;
 
 		// Local cache of verts
 		std::vector<Vec3D> verts;
@@ -187,6 +191,9 @@ public:
 			{
 				if (line[1] == 't')
 				{
+                    // File has texture
+                    hasTexture = true;
+
 					TexUV tex;
 					s >> junk >> junk >> tex.u >> tex.v;
 
@@ -195,6 +202,13 @@ public:
                     tex.w = 1.0f;
 					texs.push_back(tex);
 				}
+                else if (line[1] == 'n')
+                {
+                    // File has normals
+                    hasNormals = true;
+
+                    // Store in vector
+                }
 				else
 				{
 					Vec3D vert;

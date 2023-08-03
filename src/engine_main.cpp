@@ -150,23 +150,31 @@ void Engine3D::setup()
     // Set last mouse pos
     lastMousePos = GetMousePos();
 
+    // drawWireframe = true;
+
     // Set camera info
-    cam.pos = {0.0f, 0.0f, -15.0f};
+    cam.pos = {0.0f, 0.0f, -3.7f};
+
+    // Load messi
+    Mesh mesh;
+    mesh.LoadFromOBJFile("assets/obj/roblox_dummy.obj");
+    // mesh.texture.init("assets/bmp/messi.bmp");
+    sceneMeshes.push_back(mesh);
 
     // Load cubes
-    float size = 1.0f;
-    Mesh mesh;
-    mesh.ToCube({size, size, size});
-    mesh.size = {size, size, size};
-    mesh.texture.init("assets/bmp/dirt.bmp");
-    for (int i = -0; i < 10; i++)
-    {
-        for (int j = 0; j < 1; j++)
-        {
-            mesh.position = {i * size, 0.0f, j * size};
-            sceneMeshes.push_back(mesh);
-        }
-    }
+    // float size = 1.0f;
+    // Mesh mesh;
+    // mesh.ToCube({size, size, size});
+    // mesh.size = {size, size, size};
+    // mesh.texture.init("assets/bmp/dirt.bmp");
+    // for (float i = -10.0f; i < 10.0f; i+=.1f)
+    // {
+    //     for (int j = 0; j < 1; j++)
+    //     {
+    //         mesh.position = {i * size, 0.0f, j * size};
+    //         sceneMeshes.push_back(mesh);
+    //     }
+    // }
 
     // Load mesh
     // Mesh dogMesh;
@@ -266,7 +274,7 @@ void Engine3D::update(float dt)
 
     for (int i = 0; i < sceneMeshes.size(); i++)
     {
-        sceneMeshes[i].position.y = SDL_powf(i - sceneMeshes.size() * .5f, 2.0f);
+        sceneMeshes[i].rotation.y += dt;
     }
 }
 
@@ -483,13 +491,14 @@ void Engine3D::draw()
                         t.color
                     );
                 }
-                
-                // RenderTriangle(
-                //     {t.p[0].x, t.p[0].y},
-                //     {t.p[1].x, t.p[1].y},
-                //     {t.p[2].x, t.p[2].y},
-                //     {255, 255, 255, 255}
-                // );
+
+                if (drawWireframe)
+                    RenderTriangle(
+                        {t.p[0].x, t.p[0].y},
+                        {t.p[1].x, t.p[1].y},
+                        {t.p[2].x, t.p[2].y},
+                        {255, 255, 255, 255}
+                    );
             }
         }
     }
