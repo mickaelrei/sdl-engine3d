@@ -1,3 +1,5 @@
+#pragma once
+
 #include <SDL2/SDL.h>
 #include <bits/stdc++.h>
 
@@ -18,10 +20,6 @@ public:
         //     SDL_FreeSurface(surface);
         //     surface = NULL;
         // }
-
-        // loaded = false;
-        // width = 0;
-        // height = 0;
     }
 
     // Initialize texture

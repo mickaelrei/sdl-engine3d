@@ -4,8 +4,7 @@ SOURCE_DIR := src
 
 SRC := $(SOURCE_DIR)/main.cpp \
 	   $(SOURCE_DIR)/engine_draw.cpp \
-	   $(SOURCE_DIR)/engine_math.cpp \
-	   $(SOURCE_DIR)/engine_main.cpp
+	   $(SOURCE_DIR)/engine_main.cpp \
 
 # Flags
 FLAGS := -lSDL2main \

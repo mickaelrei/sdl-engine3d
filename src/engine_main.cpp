@@ -1,6 +1,7 @@
 #include <iostream>
 #include <list>
 #include <algorithm>
+#include <limits>
 
 #include "engine.hpp"
 
@@ -53,7 +54,7 @@ bool Engine3D::init(int width, int height)
     depthBuffer = new float[_width * _height];
 
     // Set matrices
-    matProj = Matrix_Projection(cam);
+    SetFOV(cam.fov);
 
     return true;
 }
@@ -79,6 +80,12 @@ Engine3D::~Engine3D()
     }
 
     SDL_Quit();
+}
+
+void Engine3D::SetFOV(float fov)
+{
+    cam.fov = fov;
+    matProj = Mat4x4::Projection(cam, _width, _height);
 }
 
 // Input
@@ -147,68 +154,29 @@ void Engine3D::SetFPS(int fps)
 // Methods to be overriden
 void Engine3D::setup()
 {
+    // Set camera pos
+    cam.position = {0.0f, 0.0f, -6.0f};
+
     // Set last mouse pos
     lastMousePos = GetMousePos();
 
-    // drawWireframe = true;
-
-    // Set camera info
-    cam.pos = {0.0f, 0.0f, -3.7f};
-
-    // Load messi
-    Mesh mesh;
-    mesh.LoadFromOBJFile("assets/obj/roblox_dummy.obj");
-    // mesh.texture.init("assets/bmp/messi.bmp");
-    sceneMeshes.push_back(mesh);
-
     // Load cubes
-    // float size = 1.0f;
-    // Mesh mesh;
-    // mesh.ToCube({size, size, size});
-    // mesh.size = {size, size, size};
-    // mesh.texture.init("assets/bmp/dirt.bmp");
-    // for (float i = -10.0f; i < 10.0f; i+=.1f)
-    // {
-    //     for (int j = 0; j < 1; j++)
-    //     {
-    //         mesh.position = {i * size, 0.0f, j * size};
-    //         sceneMeshes.push_back(mesh);
-    //     }
-    // }
-
-    // Load mesh
-    // Mesh dogMesh;
-    // if (!dogMesh.LoadFromOBJFile("assets/obj3ds/jack_russell.obj"))
-    // {
-    //     printf("Error loading object from OBJ file\n");
-    //     running = false;
-    //     return;
-    // }
-
-    // // Load another mesh
-    // Mesh neymarMesh;
-    // if (!neymarMesh.LoadFromOBJFile("assets/obj3ds/neymar.obj"))
-    // {
-    //     printf("Error loading object from OBJ file\n");
-    //     running = false;
-    //     return;
-    // }
-
-    // // Change positions, sizes and rotations
-    // dogMesh.position = {0.0f, 3.2f, -0.45f};
-    // dogMesh.rotation = {0.0f, M_PI * 1.0f, 0.0f};
-    // dogMesh.size = {.2f, .2f, .2f};
-
-    // neymarMesh.position = {0.0f, 0.0f, 0.0f};
-    // neymarMesh.rotation = {M_PI * -.5f, M_PI * 1.0f, 0.0f};
-
-    // // Add both meshes
-    // sceneMeshes.push_back(dogMesh);
-    // sceneMeshes.push_back(neymarMesh);
+    float size = 1.0f;
+    Mesh mesh;
+    mesh.ToCube({size, size, size});
+    mesh.texture.init("assets/bmp/dirt.bmp");
+    for (int i = -500; i < 500; i++)
+    {
+        for (int j = 0; j < 1; j++)
+        {
+            mesh.position = {i * size, 0.0f, j * size};
+            sceneMeshes.push_back(mesh);
+        }
+    }
 
     // Add light
     Light light;
-    light.dir = {0.0f, 0.0f, 1.0f};
+    light.direction = {.5f, 0.0f, 1.0f};
     light.brightness = .7f;
     lights.push_back(light);
 }
@@ -216,98 +184,86 @@ void Engine3D::setup()
 void Engine3D::update(float dt)
 {
     Vec3D right = cam.forward.cross(cam.up);
-    float speed = 20.1f;
+    float speed = 5.0f;
     float turnSpeed = .01f;
-
-    // Rotating with keyboard
-    // if (keyboardState[SDL_SCANCODE_UP])
-    //     pitch -= turnSpeed * dt * .25f;
-    // if (keyboardState[SDL_SCANCODE_DOWN])
-    //     pitch += turnSpeed * dt * .25f;
-    // if (keyboardState[SDL_SCANCODE_LEFT])
-    //     yaw -= turnSpeed * dt;
-    // if (keyboardState[SDL_SCANCODE_RIGHT])
-    //     yaw += turnSpeed * dt;
 
     // Get mouse pos
     Vec2D mousePos = GetMousePos();
 
     // Get change since last pos
     Vec2D mouseRel = mousePos - lastMousePos;
-    lastMousePos = mousePos;
 
     // Rotating with mouse
     SDL_SetRelativeMouseMode(mouseState.right ? SDL_TRUE : SDL_FALSE);
     if (mouseState.right)
+    {
+        // Rotate
         yaw += mouseRel.x * turnSpeed;
+
+        // Put mouse on screen center
+        SDL_WarpMouseInWindow(window, (int)(_width * .5f), (int)(_height * .5f));
+        lastMousePos = {_width * .5f, _height * .5f};
+    }
+    else lastMousePos = mousePos;
 
     // Moving left, right, front and back
     if (keyboardState[SDL_SCANCODE_A])
-        cam.pos -= right * speed * dt;
+        cam.position -= right * speed * dt;
     if (keyboardState[SDL_SCANCODE_D])
-        cam.pos += right * speed * dt;
+        cam.position += right * speed * dt;
     if (keyboardState[SDL_SCANCODE_W])
-        cam.pos += cam.forward * speed * dt;
+        cam.position += cam.forward * speed * dt;
     if (keyboardState[SDL_SCANCODE_S])
-        cam.pos -= cam.forward * speed * dt;
+        cam.position -= cam.forward * speed * dt;
 
     // Moving up and down
     if (keyboardState[SDL_SCANCODE_Q])
-        cam.pos.y -= speed * dt;
+        cam.position.y -= speed * dt;
     if (keyboardState[SDL_SCANCODE_E])
-        cam.pos.y += speed * dt;
+        cam.position.y += speed * dt;
 
     // Close
     if (keyboardState[SDL_SCANCODE_ESCAPE])
         running = false;
-    
 
+
+    // Time
     theta += dt * 2.5f;
 
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     for (int j = 0; j < 10; j++)
-    //     {
-    //         sceneMeshes[i * 10 + j].position.y = SDL_sinf(theta + j * .3f + i * .3f) * 3.0f;
-    //     }
-    // }
-
+    // Sin wave
     for (int i = 0; i < sceneMeshes.size(); i++)
-    {
-        sceneMeshes[i].rotation.y += dt;
-    }
+        sceneMeshes[i].position.y = SDL_sinf(theta + i * .2f) * 3.0f;
 }
 
 void Engine3D::draw()
 {
-    // printf("Draw\n");
     // Clear screen
     Fill();
 
     // Clear depth buffer
     for (int i = 0; i < _width * _height; i++)
-        depthBuffer[i] = 999999999999999999.9f;
+        depthBuffer[i] = std::numeric_limits<float>::infinity();
 
     // Loop through every scene mesh
     for (auto mesh : sceneMeshes)
     {
         // Apply rotation
-        Mat4x4 matRotZ = Matrix_RotationZ(mesh.rotation.z);
-        Mat4x4 matRotX = Matrix_RotationX(mesh.rotation.x);
-        Mat4x4 matRotY = Matrix_RotationY(mesh.rotation.y);
+        Mat4x4 matRotZ = Mat4x4::RotationZ(mesh.rotation.z);
+        Mat4x4 matRotX = Mat4x4::RotationX(mesh.rotation.x);
+        Mat4x4 matRotY = Mat4x4::RotationY(mesh.rotation.y);
 
-        Mat4x4 matTrans = Matrix_Translation(mesh.position);
-        Mat4x4 matWorld = Matrix_Identity() * matRotZ * matRotX * matRotY * matTrans;
+        Mat4x4 matTrans = Mat4x4::Translation(mesh.position);
+        Mat4x4 matWorld = Mat4x4::Identity() * matRotZ * matRotX * matRotY * matTrans;
 
         // Camera
         Vec3D camTarget = {0.0f, 0.0f, 1.0f};
-        Mat4x4 matCameraRot = Matrix_RotationY(yaw);
+        Mat4x4 matCameraRot = Mat4x4::RotationY(yaw);
         cam.forward = matCameraRot * camTarget;
-        camTarget = cam.pos + cam.forward;
-        Mat4x4 matCamera = Matrix_PointAt(cam.pos, camTarget, cam.up);
+        camTarget = cam.position + cam.forward;
+        Mat4x4 matCamera = Mat4x4::PointAt(cam.position, camTarget, cam.up);
 
         // Make view from camera
-        Mat4x4 matView = Matrix_QuickInverse(matCamera);
+        Mat4x4 matView = matCamera.QuickInverse();
 
         // Project triangles
         std::vector<Triangle> trianglesToRaster;
@@ -335,12 +291,12 @@ void Engine3D::draw()
             normal = line1.cross(line2).unit();
 
             // Get ray from triangle to camera
-            Vec3D cameraRay = triTransformed.p[0] - cam.pos;
+            Vec3D cameraRay = triTransformed.p[0] - cam.position;
 
             if (normal.dot(cameraRay) < 0.0f)
             {
                 // Illumination
-                Vec3D lightDir = lights[0].dir.unit();
+                Vec3D lightDir = lights[0].direction.unit();
 
                 // Get face luminance
                 float d = SDL_clamp(normal.dot(lightDir * lightDirCorrect), 0.1f, 1.0f);
@@ -360,7 +316,7 @@ void Engine3D::draw()
                 // Clip viewed triangle against near plane, this could
                 // form two additional triangles
                 Triangle clipped[2];
-                int clippedTriangles = Triangle_ClipAgainstPlane(
+                int clippedTriangles = ClipAgainstPlane(
                     {0.0f, 0.0f, 0.1f},
                     {0.0f, 0.0f, 1.0f},
                     triViewed,
@@ -407,7 +363,6 @@ void Engine3D::draw()
                     }
 
                     // Store triangle for sorting
-                    // triProjected.color = clipped[n].color;
                     trianglesToRaster.push_back(triProjected);
                 }
             }
@@ -420,8 +375,6 @@ void Engine3D::draw()
 
             return z1 < z2;
         });
-
-        
 
         // Clipping
         for (Triangle& triToRaster : trianglesToRaster)
@@ -447,16 +400,16 @@ void Engine3D::draw()
                     switch (p)
                         {
                         case 0:
-                            trisToAdd = Triangle_ClipAgainstPlane({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, test, clipped[0], clipped[1]);
+                            trisToAdd = ClipAgainstPlane({0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         case 1:
-                            trisToAdd = Triangle_ClipAgainstPlane({0.0f, (float)_height - 1, 0.0f}, {0.0f, -1.0f, 0.0f}, test, clipped[0], clipped[1]);
+                            trisToAdd = ClipAgainstPlane({0.0f, (float)_height - 1, 0.0f}, {0.0f, -1.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         case 2:
-                            trisToAdd = Triangle_ClipAgainstPlane({0.0f, 0.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
+                            trisToAdd = ClipAgainstPlane({0.0f, 0.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         case 3:
-                            trisToAdd = Triangle_ClipAgainstPlane({(float)_width - 1, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
+                            trisToAdd = ClipAgainstPlane({(float)_width - 1, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, test, clipped[0], clipped[1]);
                             break;
                         }
 
