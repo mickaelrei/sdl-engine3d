@@ -161,8 +161,10 @@ void Engine3D::FillTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
             else              t2x += signx2;
         }
     next2:
-        if (minx>t1x) minx = t1x; if (minx>t2x) minx = t2x;
-        if (maxx<t1x) maxx = t1x; if (maxx<t2x) maxx = t2x;
+        if (minx>t1x) minx = t1x;
+        if (minx>t2x) minx = t2x;
+        if (maxx<t1x) maxx = t1x;
+        if (maxx<t2x) maxx = t2x;
         drawline(minx, maxx, y);    // Draw line from min to max points found on the y
                                         // Now increase y
         if (!changed1) t1x += signx1;
@@ -218,8 +220,10 @@ void Engine3D::FillTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
             }
         next4:
 
-            if (minx>t1x) minx = t1x; if (minx>t2x) minx = t2x;
-            if (maxx<t1x) maxx = t1x; if (maxx<t2x) maxx = t2x;
+            if (minx>t1x) minx = t1x;
+            if (minx>t2x) minx = t2x;
+            if (maxx<t1x) maxx = t1x;
+            if (maxx<t2x) maxx = t2x;
             drawline(minx, maxx, y);   										
             if (!changed1) t1x += signx1;
             t1x += t1xp;

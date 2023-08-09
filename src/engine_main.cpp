@@ -199,6 +199,7 @@ void Engine3D::update(float dt)
     {
         // Rotate
         yaw += mouseRel.x * turnSpeed;
+        pitch += mouseRel.y * turnSpeed;
 
         // Put mouse on screen center
         SDL_WarpMouseInWindow(window, (int)(_width * .5f), (int)(_height * .5f));
@@ -230,6 +231,9 @@ void Engine3D::update(float dt)
     // Time
     theta += dt * 2.5f;
 
+    // Change fov
+    SetFOV(SDL_clamp(cam.fov - scroll * 3.f, 5.0f, 160.0f));
+
     // Sin wave
     for (int i = 0; i < sceneMeshes.size(); i++)
         sceneMeshes[i].position.y = SDL_sinf(theta + i * .2f) * 3.0f;
@@ -248,19 +252,26 @@ void Engine3D::draw()
     for (auto mesh : sceneMeshes)
     {
         // Apply rotation
-        Mat4x4 matRotZ = Mat4x4::RotationZ(mesh.rotation.z);
-        Mat4x4 matRotX = Mat4x4::RotationX(mesh.rotation.x);
-        Mat4x4 matRotY = Mat4x4::RotationY(mesh.rotation.y);
+        Mat4x4 matRotZ = Mat4x4::AxisAngle({0.0f, 0.0f, 1.0f}, mesh.rotation.z);
+        Mat4x4 matRotY = Mat4x4::AxisAngle({0.0f, 1.0f, 0.0f}, mesh.rotation.y);
+        Mat4x4 matRotX = Mat4x4::AxisAngle({1.0f, 0.0f, 0.0f}, mesh.rotation.x);
 
         Mat4x4 matTrans = Mat4x4::Translation(mesh.position);
-        Mat4x4 matWorld = Mat4x4::Identity() * matRotZ * matRotX * matRotY * matTrans;
+        Mat4x4 matWorld = Mat4x4::Identity() * matRotZ * matRotY * matRotX * matTrans;
 
         // Camera
         Vec3D camTarget = {0.0f, 0.0f, 1.0f};
-        Mat4x4 matCameraRot = Mat4x4::RotationY(yaw);
-        cam.forward = matCameraRot * camTarget;
-        camTarget = cam.position + cam.forward;
-        Mat4x4 matCamera = Mat4x4::PointAt(cam.position, camTarget, cam.up);
+        Mat4x4 matCameraRotY = Mat4x4::AxisAngle(cam.up, -yaw);
+        Mat4x4 matCameraRotX = Mat4x4::AxisAngle(cam.forward, pitch);
+
+        cam.forward = matCameraRotY * cam.forward;
+        cam.up = matCameraRotX * cam.up;
+        Mat4x4 matCamera = Mat4x4::PointAt(cam.position, cam.forward, cam.up);
+
+        // cam.forward = matCameraRotY * camTarget;
+        // cam.up = matCameraRotX * cam.forward;
+        // camTarget = cam.position + cam.forward;
+        // Mat4x4 matCamera = Mat4x4::PointAt(cam.position, camTarget, cam.up);
 
         // Make view from camera
         Mat4x4 matView = matCamera.QuickInverse();
@@ -472,17 +483,26 @@ void Engine3D::run()
 
     // Main loop
     SDL_Event e;
-    float theta = .01f;
     while (running)
     {
+        // Reset some variables
+        scroll = 0;
+
         while (SDL_PollEvent(&e))
         {
+            // Closing window
             if (e.type == SDL_QUIT)
                 running = false;
+
+            // Mouse buttons
             else if (e.type == SDL_MOUSEBUTTONDOWN)
                 MouseDown(e.button);
             else if (e.type == SDL_MOUSEBUTTONUP)
                 MouseUp(e.button);
+
+            // Mouse scroll
+            if (e.type == SDL_MOUSEWHEEL)
+                scroll = e.wheel.y;
         }
 
         // Update ticks

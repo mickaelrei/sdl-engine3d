@@ -71,6 +71,10 @@ public:
             SDL_clamp(this->z, _min.z, _max.z)
         };
     }
+    Vec3D lerp(Vec3D &other, const float t)
+    {
+        return *this + (other - *this) * t;
+    }
 
     // Printing
     friend std::ostream& operator << (std::ostream &os, const Vec3D &v) {

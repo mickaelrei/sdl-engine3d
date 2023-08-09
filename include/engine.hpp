@@ -73,6 +73,7 @@ private:
     void MouseDown(SDL_MouseButtonEvent button);
     MouseState mouseState;
     Vec2D lastMousePos;
+    Sint32 scroll;
 
     // Performance data
     Uint32 delay_ms = 0;
@@ -126,7 +127,6 @@ static int ClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &in_tri, Tria
     // Return signed shortest distance from point to plane, plane normal must be normalised
     auto dist = [&](Vec3D &p)
     {
-        Vec3D n = p.unit();
         return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - plane_n.dot(plane_p));
     };
 

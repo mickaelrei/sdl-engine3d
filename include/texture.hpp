@@ -212,7 +212,7 @@ private:
                     return p[0] << 16 | p[1] << 8 | p[2];
                 else
                     return p[0] | p[1] << 8 | p[2] << 16;
-                    break;
+                break;
 
             case 4:
                 return *(Uint32 *)p;
