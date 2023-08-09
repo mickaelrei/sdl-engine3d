@@ -341,16 +341,13 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
 
                 if (tex_w < depthBuffer[i * _width + j])
                 {
-                    // if (tex_w)
-                    // {
-                        int x = (int)(tex_u / tex_w * texture.width);
-                        int y = (int)(tex_v / tex_w * texture.height);
+                    int x = (int)(tex_u / tex_w * texture.width);
+                    int y = (int)(tex_v / tex_w * texture.height);
 
-                        SDL_Color color = texture.GetColorAt(x, y);
-                        RenderPoint({(float)j, (float)i}, color);
+                    SDL_Color color = texture.GetColorAt(x, y);
+                    RenderPoint({(float)j, (float)i}, color);
 
-                        depthBuffer[i * _width + j] = tex_w;
-                    // }
+                    depthBuffer[i * _width + j] = tex_w;
                 }
                 t += tstep;
             }
@@ -412,16 +409,13 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
 
                 if (tex_w < depthBuffer[i * _width + j])
                 {
-                    // if (tex_w)
-                    // {
-                        int x = (int)(tex_u / tex_w * texture.width);
-                        int y = (int)(tex_v / tex_w * texture.height);
+                    int x = (int)(tex_u / tex_w * texture.width);
+                    int y = (int)(tex_v / tex_w * texture.height);
 
-                        SDL_Color color = texture.GetColorAt(x, y);
-                        RenderPoint({(float)j, (float)i}, color);
+                    SDL_Color color = texture.GetColorAt(x, y);
+                    RenderPoint({(float)j, (float)i}, color);
 
-                        depthBuffer[i * _width + j] = tex_w;
-                    // }
+                    depthBuffer[i * _width + j] = tex_w;
                 }
                 t += tstep;
             }

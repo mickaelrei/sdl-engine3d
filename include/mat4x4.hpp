@@ -128,17 +128,17 @@ public:
 
         // Create matrix
         Mat4x4 mat;
-        mat.m[0][0] = SDL_cosf(angle) + SDL_powf(axis.x, 2.0f) * (1 - SDL_cosf(angle));
-        mat.m[1][0] = axis.x * axis.y * (1 - SDL_cosf(angle)) - axis.z * SDL_sinf(angle);
-        mat.m[2][0] = axis.x * axis.z * (1 - SDL_cosf(angle)) + axis.y * SDL_sinf(angle);
+        mat.m[0][0] = SDL_cosf(angle) + SDL_powf(axis.x, 2.0f) *    (1 - SDL_cosf(angle));
+        mat.m[1][0] = axis.x * axis.y *  (1 - SDL_cosf(angle)) - axis.z * SDL_sinf(angle);
+        mat.m[2][0] = axis.x * axis.z *  (1 - SDL_cosf(angle)) + axis.y * SDL_sinf(angle);
 
-        mat.m[0][1] = axis.y * axis.x * (1 - SDL_cosf(angle)) + axis.z * SDL_sinf(angle);
-        mat.m[1][1] = SDL_cosf(angle) + SDL_powf(axis.y, 2.0f) * (1 - SDL_cosf(angle));
-        mat.m[2][1] = axis.y * axis.z * (1 - SDL_cosf(angle)) - axis.x * SDL_sinf(angle);
+        mat.m[0][1] = axis.y * axis.x *  (1 - SDL_cosf(angle)) + axis.z * SDL_sinf(angle);
+        mat.m[1][1] = SDL_cosf(angle) + SDL_powf(axis.y, 2.0f) *    (1 - SDL_cosf(angle));
+        mat.m[2][1] = axis.y * axis.z *  (1 - SDL_cosf(angle)) - axis.x * SDL_sinf(angle);
 
-        mat.m[0][2] = axis.z * axis.x * (1 - SDL_cosf(angle)) - axis.y * SDL_sinf(angle);
-        mat.m[1][2] = axis.z * axis.y * (1 - SDL_cosf(angle)) + axis.x * SDL_sinf(angle);
-        mat.m[2][2] = SDL_cosf(angle) + SDL_powf(axis.z, 2.0f) * (1 - SDL_cosf(angle));
+        mat.m[0][2] = axis.z * axis.x *  (1 - SDL_cosf(angle)) - axis.y * SDL_sinf(angle);
+        mat.m[1][2] = axis.z * axis.y *  (1 - SDL_cosf(angle)) + axis.x * SDL_sinf(angle);
+        mat.m[2][2] = SDL_cosf(angle) + SDL_powf(axis.z, 2.0f) *    (1 - SDL_cosf(angle));
 
         mat.m[3][3] = 1.0f;
 

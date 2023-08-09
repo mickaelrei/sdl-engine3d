@@ -35,22 +35,7 @@ public:
 
         // Set size
         loaded = true;
-        printf("%d, %d\n", surface->w, surface->h);
         width = surface->w; height = surface->h;
-
-        // Load color data
-        // printf("Tex size: %ld\n", colors.size());
-        // int i = 0;
-        // colors = std::vector<SDL_Color>(width * height);
-        // for (int y = 0; y < height; y++)
-        // {
-        //     for (int x = 0; x < width; x++)
-        //     {
-        //         Uint8 r, g, b, a;
-        //         SDL_Color color = GetColorAt(x, y);
-        //         colors[y * width + x] = color;
-        //     }
-        // }
 
         return loaded;
     }
@@ -82,14 +67,12 @@ public:
     // https://stackoverflow.com/questions/3279543/what-is-the-copy-and-swap-idiom
     friend void swap(Texture& first, Texture& second)
     {
-        using std::swap;
-
         // by swapping the members of two objects,
         // the two objects are effectively swapped
-        swap(first.loaded, second.loaded);
-        swap(first.width, second.width);
-        swap(first.height, second.height);
-        swap(first.surface, second.surface);
+        std::swap(first.loaded, second.loaded);
+        std::swap(first.width, second.width);
+        std::swap(first.height, second.height);
+        std::swap(first.surface, second.surface);
     }
 
     Texture& operator=(Texture other)
@@ -111,7 +94,7 @@ public:
     //     // note that this is non-throwing, because of the data
     //     // types being used; more attention to detail with regards
     //     // to exceptions must be given in a more general case, however
-    //     // std::copy(other.surface, other.surface, surface);
+    //     std::copy(other.surface, other.surface, surface);
     // }
 
     // If texture has been loaded
@@ -121,45 +104,6 @@ public:
     int width = 0, height = 0;
 
     // Get color at given coordinate
-    // Made by Daniel1985
-    // https://discourse.libsdl.org/t/how-do-i-get-the-rgb-values-of-a-pixel-from-a-given-surface-and-x-and-y-coordinates-in-sdl2/26915
-    SDL_Color ColorAt(int x, int y)
-    {
-        // Check if not loaded
-        if (!loaded || !surface)
-        {
-            printf("Not loaded\n");
-            return {0};
-        }
-
-        // Check if out of bounds
-        if (x < 0 || x >= width || y < 0 || y >= height)
-        {
-            printf("[ColorAt]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", x, y, width, height);
-            return {0};
-        }
-
-        // Bytes per pixel
-        Uint8 Bpp = surface->format->BytesPerPixel;
-
-        /*
-        Retrieve the address to a specific pixel
-        surface->pixels	= an array containing the SDL_Surface' pixels
-        surface->pitch		= the length of a row of pixels (in bytes)
-        X and Y				= the offset on where on the image to retrieve the pixel, (0, 0) is in the upper left corner of the image
-        */
-        Uint8* pPixel = (Uint8*)surface->pixels + y * surface->pitch + x * Bpp;
-
-        Uint32 PixelData = *(Uint32*)pPixel;
-
-        SDL_Color Color = {0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE};
-
-        // Retrieve the RGB values of the specific pixel
-        SDL_GetRGB(PixelData, surface->format, &Color.r, &Color.g, &Color.b);
-
-        return Color;
-    }
-
     SDL_Color GetColorAt(int x, int y)
     {
         // Check if not loaded
