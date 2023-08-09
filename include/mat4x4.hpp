@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vec3d.hpp"
-#include "camera.hpp"
 
 class Mat4x4
 {
@@ -72,20 +71,20 @@ public:
         return matrix;
     }
 
-    static Mat4x4 Projection(Camera cam, int width, int height)
+    static Mat4x4 Projection(float fov, float near, float far, int width, int height)
     {
-        float fFovRad = 1.0f / SDL_tanf(cam.fov * 0.5f / 180.0f * 3.14159f);
+        float fFovRad = 1.0f / SDL_tanf(fov * 0.5f / 180.0f * 3.14159f);
         Mat4x4 matrix;
         matrix.m[0][0] = (height / width) * fFovRad;
         matrix.m[1][1] = fFovRad;
-        matrix.m[2][2] = cam.far / (cam.far - cam.near);
-        matrix.m[3][2] = (-cam.far * cam.near) / (cam.far - cam.near);
+        matrix.m[2][2] = far / (far - near);
+        matrix.m[3][2] = (-far * near) / (far - near);
         matrix.m[2][3] = -1.0f;
         matrix.m[3][3] = 0.0f;
         return matrix;
     }
 
-    static Mat4x4 PointAt(Vec3D origin, Vec3D target, Vec3D up)
+    static Mat4x4 LookAt(Vec3D origin, Vec3D target, Vec3D up)
     {
         // Calculate forward vector
         Vec3D forward = (target - origin).unit();

@@ -89,7 +89,6 @@ private:
 
     // Rendering related
     std::vector<Light> lights;
-    Vec3D lightDirCorrect = {1.0f, -1.0f, -1.0f};
 
     // List of scene meshes
     std::vector<Mesh> sceneMeshes;

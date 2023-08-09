@@ -75,6 +75,10 @@ public:
     {
         return *this + (other - *this) * t;
     }
+    static float angle(Vec3D v0, Vec3D v1)
+    {
+        return (float)SDL_acos((double)v0.dot(v1));
+    }
 
     // Printing
     friend std::ostream& operator << (std::ostream &os, const Vec3D &v) {

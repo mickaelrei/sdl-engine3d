@@ -85,7 +85,7 @@ Engine3D::~Engine3D()
 void Engine3D::SetFOV(float fov)
 {
     cam.fov = fov;
-    matProj = Mat4x4::Projection(cam, _width, _height);
+    matProj = Mat4x4::Projection(cam.fov, cam.near, cam.far, _width, _height);
 }
 
 // Input
@@ -160,31 +160,37 @@ void Engine3D::setup()
     // Set last mouse pos
     lastMousePos = GetMousePos();
 
-    // Load cubes
-    float size = 1.0f;
     Mesh mesh;
-    mesh.ToCube({size, size, size});
-    mesh.texture.init("assets/bmp/dirt.bmp");
-    for (int i = -500; i < 500; i++)
-    {
-        for (int j = 0; j < 1; j++)
-        {
-            mesh.position = {i * size, 0.0f, -j * size};
-            sceneMeshes.push_back(mesh);
-        }
-    }
+    mesh.size = {.1f, .1f, .1f};
+    mesh.LoadFromOBJFile("assets/obj/trex.obj");
+    mesh.texture.init("assets/bmp/trex.bmp");
+    sceneMeshes.push_back(mesh);
+
+    // Load cubes
+    // float size = 1.0f;
+    // Mesh mesh;
+    // mesh.ToCube({size, size, size});
+    // mesh.texture.init("assets/bmp/dirt.bmp");
+    // for (int i = -500; i < 500; i++)
+    // {
+    //     for (int j = 0; j < 1; j++)
+    //     {
+    //         mesh.position = {i * size, 0.0f, -j * size};
+    //         sceneMeshes.push_back(mesh);
+    //     }
+    // }
 
     // Add light
     Light light;
-    light.direction = {.5f, 0.0f, 1.0f};
+    light.direction = {0.0f, 0.0f, -1.0f};
     light.brightness = .7f;
     lights.push_back(light);
 }
 
 void Engine3D::update(float dt)
 {
-    Vec3D right = cam.forward.cross(cam.up);
-    float speed = 5.0f;
+    Vec3D right = cam.forward.cross(cam.up).unit();
+    float speed = 25.0f;
     float turnSpeed = .01f;
 
     // Get mouse pos
@@ -198,9 +204,7 @@ void Engine3D::update(float dt)
     if (mouseState.right)
     {
         // Rotate
-        yaw += mouseRel.x * turnSpeed;
-        pitch += mouseRel.y * turnSpeed;
-        // pitch = mouseRel.y * turnSpeed;
+        cam.rotate(-mouseRel.y * turnSpeed, mouseRel.x * turnSpeed);
 
         // Put mouse on screen center
         SDL_WarpMouseInWindow(window, (int)(_width * .5f), (int)(_height * .5f));
@@ -228,22 +232,15 @@ void Engine3D::update(float dt)
     if (keyboardState[SDL_SCANCODE_ESCAPE])
         running = false;
 
-
     // Time
     theta += dt * 2.5f;
 
     // Change fov
     SetFOV(SDL_clamp(cam.fov - scroll * 3.f, 5.0f, 160.0f));
 
-    // sceneMeshes[0].position = {
-    //     mousePos.x / (float)_width * 5,
-    //     mousePos.y / (float)_height * 5,
-    //     0.0f
-    // };
-
     // Sin wave
-    for (int i = 0; i < sceneMeshes.size(); i++)
-        sceneMeshes[i].position.y = SDL_sinf(theta + sceneMeshes[i].position.x * .2f) * 3.0f;
+    // for (int i = 0; i < sceneMeshes.size(); i++)
+    //     sceneMeshes[i].position.y = SDL_sinf(theta + sceneMeshes[i].position.x * .2f) * 3.0f;
 }
 
 void Engine3D::draw()
@@ -270,31 +267,8 @@ void Engine3D::draw()
         Mat4x4 matTrans = Mat4x4::Translation(mesh.position * Vec3D(1.0f, -1.0f, 1.0f));
         Mat4x4 matWorld = Mat4x4::Identity() * matRotZ * matRotY * matRotX * matTrans;
 
-        // Camera
-        Vec3D camTarget = {0.0f, 0.0f, -1.0f};
-
-        // Rotation on X axis - look up and down
-        // float nPitch = SDL_clamp(pitch, minPitch, maxPitch);
-        // Vec3D right = cam.forward.cross(cam.up);
-        // Vec3D forward = Mat4x4::AxisAngle(right, nPitch) * cam.forward;
-        // cam.forward = forward;
-        
-        // // Rotation on Y axis - look left and right
-        // Vec3D up = cam.forward.cross(right);
-        // cam.up = up;
-
-        // // Get camera point at matrix
-        // Mat4x4 matCamera = Mat4x4::PointAt(cam.position, cam.position + cam.forward, cam.up);
-
-
-
-        // Original camera rotation code - only left and right
-        Mat4x4 matCameraRotY = Mat4x4::AxisAngle(cam.up, -yaw);
-        Mat4x4 matCameraRotX = Mat4x4::AxisAngle(cam.forward, pitch);
-
-        cam.forward = matCameraRotY * camTarget;
-        camTarget = cam.position + cam.forward;
-        Mat4x4 matCamera = Mat4x4::PointAt(cam.position, camTarget, cam.up);
+        // Camera look at matrix
+        Mat4x4 matCamera = Mat4x4::LookAt(cam.position, cam.position + cam.forward, cam.up);
 
         // Make view from camera
         Mat4x4 matView = matCamera.QuickInverse();
@@ -333,7 +307,7 @@ void Engine3D::draw()
                 Vec3D lightDir = lights[0].direction.unit();
 
                 // Get face luminance
-                float d = SDL_clamp(normal.dot(lightDir * lightDirCorrect), 0.1f, 1.0f);
+                float d = SDL_clamp(normal.dot(-lightDir), 0.1f, 1.0f);
 
                 // Set luminance
                 HSL hsl;
