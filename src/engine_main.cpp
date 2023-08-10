@@ -56,6 +56,9 @@ bool Engine3D::init(int width, int height)
     // Set matrices
     SetFOV(cam.fov);
 
+    // Set last mouse pos
+    lastMousePos = {.5f * _width, .5f * _height};
+
     return true;
 }
 
@@ -155,30 +158,20 @@ void Engine3D::SetFPS(int fps)
 void Engine3D::setup()
 {
     // Set camera pos
-    cam.position = {0.0f, 0.0f, 6.0f};
-
-    // Set last mouse pos
-    lastMousePos = GetMousePos();
-
-    Mesh mesh;
-    mesh.size = {.1f, .1f, .1f};
-    mesh.LoadFromOBJFile("assets/obj/trex.obj");
-    mesh.texture.init("assets/bmp/trex.bmp");
-    sceneMeshes.push_back(mesh);
+    cam.position = {0.0f, 5.0f, 15.0f};
 
     // Load cubes
-    // float size = 1.0f;
-    // Mesh mesh;
-    // mesh.ToCube({size, size, size});
-    // mesh.texture.init("assets/bmp/dirt.bmp");
-    // for (int i = -500; i < 500; i++)
-    // {
-    //     for (int j = 0; j < 1; j++)
-    //     {
-    //         mesh.position = {i * size, 0.0f, -j * size};
-    //         sceneMeshes.push_back(mesh);
-    //     }
-    // }
+    float size = 1.0f;
+    Mesh mesh = Mesh::MinecraftCube({size, size, size});
+    mesh.texture.init("assets/bmp/grass.bmp");
+    for (int i = -10; i < 10; i++)
+    {
+        for (int j = -10; j < 10; j++)
+        {
+            mesh.position = {i * size, 0.0f, -j * size};
+            sceneMeshes.push_back(mesh);
+        }
+    }
 
     // Add light
     Light light;
@@ -190,7 +183,7 @@ void Engine3D::setup()
 void Engine3D::update(float dt)
 {
     Vec3D right = cam.forward.cross(cam.up).unit();
-    float speed = 25.0f;
+    float speed = 5.0f;
     float turnSpeed = .01f;
 
     // Get mouse pos
@@ -238,9 +231,13 @@ void Engine3D::update(float dt)
     // Change fov
     SetFOV(SDL_clamp(cam.fov - scroll * 3.f, 5.0f, 160.0f));
 
-    // Sin wave
-    // for (int i = 0; i < sceneMeshes.size(); i++)
-    //     sceneMeshes[i].position.y = SDL_sinf(theta + sceneMeshes[i].position.x * .2f) * 3.0f;
+    for (int i = 0; i < 20; i++)
+    {
+        for (int j = 0; j < 20; j++)
+        {
+            sceneMeshes[i * 20 + j].position.y = SDL_sinf(theta + i * .2f + j * .2f) * 3.0f;
+        }
+    }
 }
 
 void Engine3D::draw()
@@ -263,8 +260,7 @@ void Engine3D::draw()
         Mat4x4 matRotY = Mat4x4::AxisAngle({0.0f, 1.0f, 0.0f}, mesh.rotation.y);
         Mat4x4 matRotX = Mat4x4::AxisAngle({1.0f, 0.0f, 0.0f}, mesh.rotation.x);
 
-        // Invert Y axis because SDL increases downwards on Y
-        Mat4x4 matTrans = Mat4x4::Translation(mesh.position * Vec3D(1.0f, -1.0f, 1.0f));
+        Mat4x4 matTrans = Mat4x4::Translation(mesh.position * Vec3D(1.0f, 1.0f, 1.0f));
         Mat4x4 matWorld = Mat4x4::Identity() * matRotZ * matRotY * matRotX * matTrans;
 
         // Camera look at matrix

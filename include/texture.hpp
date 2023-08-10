@@ -55,7 +55,7 @@ public:
         int sy = (int)(y * (float)height);
         if (sx < 0 || sx >= width || sy < 0 || sy >= height)
         {
-            // printf("[GetPixelColor]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", sx, sy, width, height);
+            printf("[GetPixelColor]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", sx, sy, width, height);
             return {0};
         }
 

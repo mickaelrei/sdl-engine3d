@@ -24,6 +24,7 @@ public:
     Vec3D size = {1.0f, 1.0f, 1.0f};
     Texture texture;
 
+    // Set color of all triangles
     void SetColor(SDL_Color color)
     {
         for (auto& tri : tris)
@@ -32,11 +33,17 @@ public:
         }
     }
 
-    bool LoadFromOBJFile(std::string fileName)
+    // Load from .obj file
+    static Mesh FromOBJFile(std::string fileName)
     {
         std::ifstream f(fileName);
 		if (!f.is_open())
-			return false;
+        {
+            std::cout << "Error loading OBJ model from path " << fileName << "\n";
+            exit(-1);
+        }
+
+        Mesh mesh;
 
         // Check if file has UVs and normals
         bool hasTexture = false;
@@ -92,7 +99,7 @@ public:
                 {
                     int f[3];
                     s >> junk >> f[0] >> f[1] >> f[2];
-                    tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
+                    mesh.tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
                 }
                 else
                 {
@@ -111,54 +118,93 @@ public:
                     }
                     tokens[nTokenCount].pop_back();
 
-                    tris.push_back({
+                    mesh.tris.push_back({
                         verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1],     // Verts
                         texs[stoi(tokens[1]) - 1], texs[stoi(tokens[3]) - 1], texs[stoi(tokens[5]) - 1]         // UVs
                     });
                 }
             }
 		}
-		return true;
+		return mesh;
     }
 
-    void ToCube(Vec3D size = {1.0f, 1.0f, 1.0f})
+    // Common shapes
+    static Mesh Cube(Vec3D size = {1.0f, 1.0f, 1.0f})
     {
-        tris.clear();
+        Mesh mesh;
 
         float halfX = size.x * .5f;
         float halfY = size.y * .5f;
         float halfZ = size.z * .5f;
-        tris = {
+        mesh.tris = {
             // FRONT
-            { Vec3D(-halfX, -halfY, -halfZ),    Vec3D(-halfX,  halfY, -halfZ),   Vec3D( halfX,  halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(1.0f, 0.0f) },
-            { Vec3D(-halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY, -halfZ),   Vec3D( halfX, -halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(1.0f, 1.0f) },
+            { Vec3D(-halfX, -halfY, -halfZ),    Vec3D(-halfX,  halfY, -halfZ),   Vec3D( halfX,  halfY, -halfZ),    TexUV(1.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(0.0f, 0.0f) },
+            { Vec3D(-halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY, -halfZ),   Vec3D( halfX, -halfY, -halfZ),    TexUV(1.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(0.0f, 1.0f) },
 
             // RIGHT
-            { Vec3D( halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY, -halfZ),   Vec3D( halfX,  halfY,  halfZ),    TexUV(0.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(1.0f, 0.0f) },
-            { Vec3D( halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D( halfX, -halfY,  halfZ),    TexUV(0.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(1.0f, 1.0f) },
+            { Vec3D( halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY, -halfZ),   Vec3D( halfX,  halfY,  halfZ),    TexUV(1.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(0.0f, 0.0f) },
+            { Vec3D( halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D( halfX, -halfY,  halfZ),    TexUV(1.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(0.0f, 1.0f) },
 
             // BACK
-            { Vec3D( halfX, -halfY,  halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D(-halfX,  halfY,  halfZ),    TexUV(0.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(1.0f, 0.0f) },
-            { Vec3D( halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D(-halfX, -halfY,  halfZ),    TexUV(0.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(1.0f, 1.0f) },
+            { Vec3D( halfX, -halfY,  halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D(-halfX,  halfY,  halfZ),    TexUV(1.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(0.0f, 0.0f) },
+            { Vec3D( halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D(-halfX, -halfY,  halfZ),    TexUV(1.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(0.0f, 1.0f) },
 
             // LEFT
-            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D(-halfX,  halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(1.0f, 0.0f) },
-            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY, -halfZ),   Vec3D(-halfX, -halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(1.0f, 1.0f) },
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D(-halfX,  halfY, -halfZ),    TexUV(1.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(0.0f, 0.0f) },
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY, -halfZ),   Vec3D(-halfX, -halfY, -halfZ),    TexUV(1.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(0.0f, 1.0f) },
 
             // TOP
-            { Vec3D(-halfX,  halfY, -halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D( halfX,  halfY,  halfZ),    TexUV(0.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(1.0f, 0.0f) },
-            { Vec3D(-halfX,  halfY, -halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D( halfX,  halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(1.0f, 1.0f) },
+            { Vec3D(-halfX,  halfY, -halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D( halfX,  halfY,  halfZ),    TexUV(1.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(0.0f, 0.0f) },
+            { Vec3D(-halfX,  halfY, -halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D( halfX,  halfY, -halfZ),    TexUV(1.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(0.0f, 1.0f) },
 
             // BOTTOM
-            { Vec3D( halfX, -halfY,  halfZ),    Vec3D(-halfX, -halfY,  halfZ),   Vec3D(-halfX, -halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(1.0f, 0.0f) },
-            { Vec3D( halfX, -halfY,  halfZ),    Vec3D(-halfX, -halfY, -halfZ),   Vec3D( halfX, -halfY, -halfZ),    TexUV(0.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(1.0f, 1.0f) },
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX, -halfY, -halfZ),   Vec3D( halfX, -halfY, -halfZ),    TexUV(1.0f, 1.0f),     TexUV(1.0f, 0.0f),     TexUV(0.0f, 0.0f) },
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D( halfX, -halfY, -halfZ),   Vec3D( halfX, -halfY,  halfZ),    TexUV(1.0f, 1.0f),     TexUV(0.0f, 0.0f),     TexUV(0.0f, 1.0f) },
 		};
+
+        return mesh;
     }
 
-    void ToSphere(float radius, int resolution = 10)
+    static Mesh MinecraftCube(Vec3D size = {1.0f, 1.0f, 1.0f})
     {
-        // Clear tris
-        tris.clear();
+        Mesh mesh;
+
+        float halfX = size.x * .5f;
+        float halfY = size.y * .5f;
+        float halfZ = size.z * .5f;
+
+        mesh.tris = {
+            // FRONT
+            { Vec3D(-halfX, -halfY, -halfZ),    Vec3D(-halfX,  halfY, -halfZ),   Vec3D( halfX,  halfY, -halfZ),    TexUV(0.5f,  2.0f / 3.0f),     TexUV(0.5f,  1.0f / 3.0f),     TexUV(0.25f, 1.0f / 3.0f) },
+            { Vec3D(-halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY, -halfZ),   Vec3D( halfX, -halfY, -halfZ),    TexUV(0.5f,  2.0f / 3.0f),     TexUV(0.25f, 1.0f / 3.0f),     TexUV(0.25f, 2.0f / 3.0f) },
+
+            // RIGHT
+            { Vec3D( halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY, -halfZ),   Vec3D( halfX,  halfY,  halfZ),    TexUV(0.75f, 2.0f / 3.0f),     TexUV(0.75f, 1.0f / 3.0f),     TexUV(0.5f,  1.0f / 3.0f) },
+            { Vec3D( halfX, -halfY, -halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D( halfX, -halfY,  halfZ),    TexUV(0.75f, 2.0f / 3.0f),     TexUV(0.5f,  1.0f / 3.0f),     TexUV(0.5f,  2.0f / 3.0f) },
+
+            // BACK
+            { Vec3D( halfX, -halfY,  halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D(-halfX,  halfY,  halfZ),    TexUV(1.0f,  2.0f / 3.0f),     TexUV(1.0f,  1.0f / 3.0f),     TexUV(0.75f, 1.0f / 3.0f) },
+            { Vec3D( halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D(-halfX, -halfY,  halfZ),    TexUV(1.0f,  2.0f / 3.0f),     TexUV(0.75f, 1.0f / 3.0f),     TexUV(0.75f, 2.0f / 3.0f) },
+
+            // LEFT
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D(-halfX,  halfY, -halfZ),    TexUV(0.25f, 2.0f / 3.0f),     TexUV(0.25f, 1.0f / 3.0f),     TexUV(0.0f,  1.0f / 3.0f) },
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX,  halfY, -halfZ),   Vec3D(-halfX, -halfY, -halfZ),    TexUV(0.25f, 2.0f / 3.0f),     TexUV(0.0f,  1.0f / 3.0f),     TexUV(0.0f,  2.0f / 3.0f) },
+
+            // TOP
+            { Vec3D(-halfX,  halfY, -halfZ),    Vec3D(-halfX,  halfY,  halfZ),   Vec3D( halfX,  halfY,  halfZ),    TexUV(0.5f,  1.0f / 3.0f),     TexUV(0.5f,         0.0f),     TexUV(0.25f,        0.0f) },
+            { Vec3D(-halfX,  halfY, -halfZ),    Vec3D( halfX,  halfY,  halfZ),   Vec3D( halfX,  halfY, -halfZ),    TexUV(0.5f,  1.0f / 3.0f),     TexUV(0.25f,        0.0f),     TexUV(0.25f, 1.0f / 3.0f) },
+
+            // BOTTOM
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D(-halfX, -halfY, -halfZ),   Vec3D( halfX, -halfY, -halfZ),    TexUV(0.5f,        1.0f),      TexUV(0.5f,  2.0f / 3.0f),     TexUV(0.25f, 2.0f / 3.0f) },
+            { Vec3D(-halfX, -halfY,  halfZ),    Vec3D( halfX, -halfY, -halfZ),   Vec3D( halfX, -halfY,  halfZ),    TexUV(0.5f,        1.0f),      TexUV(0.25f, 2.0f / 3.0f),     TexUV(0.25f,        1.0f) },
+		};
+
+        return mesh;
+    }
+
+    static Mesh Sphere(float radius, int resolution = 10)
+    {
+        Mesh mesh;
 
         // Cache of vertices
         std::vector<Vec3D> vertices;
@@ -192,7 +238,7 @@ public:
                 int i3 = (i+1) + (j+1) * resolution;
 
                 // Create two triangles
-                tris.push_back({
+                mesh.tris.push_back({
                     vertices[i0],
                     vertices[i1],
                     vertices[i3],
@@ -200,7 +246,7 @@ public:
                     TexUV{0.0f, 0.0f, 1.0f},
                     TexUV{1.0f, 0.0f, 1.0f}
                 });
-                tris.push_back({
+                mesh.tris.push_back({
                     vertices[i0],
                     vertices[i3],
                     vertices[i2],
@@ -210,5 +256,46 @@ public:
                 });
             }
         }
+
+        return mesh;
+    }
+
+    static Mesh Cone(float baseRadius, float height, int resolution = 10)
+    {
+        Mesh mesh;
+        
+        // Cache of vertices
+        std::vector<Vec3D> vertices;
+
+        // Base vertices
+        for (float i = 0; i < resolution; i++)
+        {
+            float x = SDL_cosf(i / (float)resolution * M_PI * 2) * baseRadius;
+            float z = SDL_sinf(i / (float)resolution * M_PI * 2) * baseRadius;
+
+            vertices.push_back({x, -height * .5f, z});
+        }
+
+        // Create top faces
+        Vec3D topVertex = {0.0f, height * .5f, 0.0f};
+        for (int i = 0; i < resolution; i++)
+        {
+            mesh.tris.push_back({
+                vertices[i], topVertex, vertices[(i+1) % resolution],
+                TexUV(0.0f, 0.0f), TexUV(0.0f, 1.0f), TexUV(1.0f, 1.0f)}
+            );
+        }
+
+        // Create bottom faces
+        Vec3D bottomVertex = {0.0f, -height * .5f, 0.0f};
+        for (int i = 0; i < resolution; i++)
+        {
+            mesh.tris.push_back({
+                vertices[i], vertices[(i+1) % resolution], bottomVertex,
+                TexUV(1.0f, 0.0f), TexUV(0.0f, 0.0f), TexUV(1.0f, 1.0f)}
+            );
+        }
+
+        return mesh;
     }
 };
