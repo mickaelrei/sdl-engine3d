@@ -197,13 +197,19 @@ void Engine3D::update(float dt)
     if (mouseState.right)
     {
         // Rotate
-        cam.rotate(-mouseRel.y * turnSpeed, mouseRel.x * turnSpeed);
+        cam.rotate(-mouseRel.y * turnSpeed, -mouseRel.x * turnSpeed);
 
         // Put mouse on screen center
         SDL_WarpMouseInWindow(window, (int)(_width * .5f), (int)(_height * .5f));
         lastMousePos = {_width * .5f, _height * .5f};
     }
     else lastMousePos = mousePos;
+
+    // Rotating on Z with keyboard
+    if (keyboardState[SDL_SCANCODE_Z])
+        cam.rotate(0.0f, 0.0f, 1.0f * -turnSpeed);
+    if (keyboardState[SDL_SCANCODE_C])
+        cam.rotate(0.0f, 0.0f, 1.0f * turnSpeed);
 
     // Moving left, right, front and back
     if (keyboardState[SDL_SCANCODE_A])
@@ -217,9 +223,9 @@ void Engine3D::update(float dt)
 
     // Moving up and down
     if (keyboardState[SDL_SCANCODE_Q])
-        cam.position.y -= speed * dt;
+        cam.position -= cam.up * speed * dt;
     if (keyboardState[SDL_SCANCODE_E])
-        cam.position.y += speed * dt;
+        cam.position += cam.up * speed * dt;
 
     // Close
     if (keyboardState[SDL_SCANCODE_ESCAPE])
@@ -235,7 +241,7 @@ void Engine3D::update(float dt)
     {
         for (int j = 0; j < 20; j++)
         {
-            sceneMeshes[i * 20 + j].position.y = SDL_sinf(theta + i * .2f + j * .2f) * 3.0f;
+            sceneMeshes[i * 20 + j].position.y = SDL_sinf(theta + i * .2f + (j) * .2f) * 3.0f;
         }
     }
 }
