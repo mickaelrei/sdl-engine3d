@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <SDL2/SDL.h>
 
 class Vec3D
@@ -61,14 +62,14 @@ public:
 		v.z = x * other.y - y * other.x;
 		return v;
     }
-    float magnitude() { return SDL_sqrtf(this->x * this->x + this->y * this->y + this->z * this->z); }
+    float magnitude() { return std::sqrt(this->x * this->x + this->y * this->y + this->z * this->z); }
     Vec3D unit() { return *this / this->magnitude(); }
     Vec3D clamp(const Vec3D& _min, const Vec3D& _max)
     {
         return {
-            SDL_clamp(this->x, _min.x, _max.x),
-            SDL_clamp(this->y, _min.y, _max.y),
-            SDL_clamp(this->z, _min.z, _max.z)
+            std::clamp(this->x, _min.x, _max.x),
+            std::clamp(this->y, _min.y, _max.y),
+            std::clamp(this->z, _min.z, _max.z)
         };
     }
     Vec3D lerp(Vec3D &other, const float t)
@@ -77,7 +78,11 @@ public:
     }
     static float angle(Vec3D v0, Vec3D v1)
     {
-        return (float)SDL_acos((double)v0.dot(v1));
+        return std::acos(v0.dot(v1));
+    }
+    static float distance(Vec3D v0, Vec3D v1)
+    {
+        return (v0 - v1).magnitude();
     }
 
     // Printing

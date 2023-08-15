@@ -218,9 +218,9 @@ public:
                 float lon = map_num(j, 0, resolution-1, 0, M_PI);
 
                 Vec3D v;
-                v.x = SDL_sinf(lon) * SDL_cosf(lat) * radius * 0.5f;
-                v.y = SDL_sinf(lon) * SDL_sinf(lat) * radius * 0.5f;
-                v.z = SDL_cosf(lon) * radius * 0.5f;
+                v.x = std::sin(lon) * std::cos(lat) * radius * 0.5f;
+                v.y = std::sin(lon) * std::sin(lat) * radius * 0.5f;
+                v.z = std::cos(lon) * radius * 0.5f;
 
                 vertices.push_back(v);
             }
@@ -270,8 +270,8 @@ public:
         // Base vertices
         for (float i = 0; i < resolution; i++)
         {
-            float x = SDL_cosf(i / (float)resolution * M_PI * 2) * baseRadius;
-            float z = SDL_sinf(i / (float)resolution * M_PI * 2) * baseRadius;
+            float x = std::cos(i / (float)resolution * M_PI * 2) * baseRadius;
+            float z = std::sin(i / (float)resolution * M_PI * 2) * baseRadius;
 
             vertices.push_back({x, -height * .5f, z});
         }

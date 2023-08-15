@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <SDL2/SDL.h>
 
 struct Vec2D
@@ -30,15 +31,13 @@ struct Vec2D
     bool operator <= (const Vec2D& other) { return this->x <= other.x && this->y <= other.y; }
 
     // Methods
-    // float dot(const Vec2D& other) { };
-    // Vec2D cross(const Vec2D& other) { };
-    float magnitude() { return SDL_sqrtf(this->x * this->x + this->y * this->y); }
+    float magnitude() { return std::sqrt(this->x * this->x + this->y * this->y); }
     Vec2D unit() { return *this / this->magnitude(); }
     Vec2D clamp(const Vec2D& _min, const Vec2D& _max)
     {
         return {
-            SDL_clamp(this->x, _min.x, _max.x),
-            SDL_clamp(this->y, _min.y, _max.y)
+            std::clamp(this->x, _min.x, _max.x),
+            std::clamp(this->y, _min.y, _max.y)
         };
     }
 

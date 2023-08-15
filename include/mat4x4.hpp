@@ -1,11 +1,15 @@
 #pragma once
 
+#include <cmath>
 #include "vec3d.hpp"
 
 class Mat4x4
 {
 public:
     Mat4x4() {}
+
+    // Field
+    float m[4][4] = {0};
 
     // Common operations
     static Mat4x4 Identity()
@@ -18,43 +22,39 @@ public:
         return matrix;
     }
 
-    static Mat4x4 RotationX(float theta)
+    static Mat4x4 RotationX(float angle)
     {
         Mat4x4 matrix;
-        matrix.m[0][0] = 1.0f;
-        matrix.m[1][1] =  SDL_cosf(theta);
-        matrix.m[1][2] =  SDL_sinf(theta);
-        matrix.m[2][1] = -SDL_sinf(theta);
-        matrix.m[2][2] =  SDL_cosf(theta);
-        matrix.m[3][3] = 1.0f;
+        matrix.m[0][0] =  1.0f;
+        matrix.m[1][1] =  std::cos(angle);
+        matrix.m[1][2] =  std::sin(angle);
+        matrix.m[2][1] = -std::sin(angle);
+        matrix.m[2][2] =  std::cos(angle);
+        matrix.m[3][3] =  1.0f;
         return matrix;
     }
 
-    static Mat4x4 RotationY(float theta)
+    static Mat4x4 RotationY(float angle)
     {
         Mat4x4 matrix;
-        matrix.m[0][0] =  SDL_cosf(theta);
-        // matrix.m[0][2] =  SDL_sinf(theta);
-        // matrix.m[2][0] = -SDL_sinf(theta);
-
-        matrix.m[2][0] =  SDL_sinf(theta);
-        matrix.m[0][2] = -SDL_sinf(theta);
-
-        matrix.m[1][1] = 1.0f;
-        matrix.m[2][2] =  SDL_cosf(theta);
-        matrix.m[3][3] = 1.0f;
+        matrix.m[0][0] =  std::cos(angle);
+        matrix.m[2][0] =  std::sin(angle);
+        matrix.m[0][2] = -std::sin(angle);
+        matrix.m[1][1] =  1.0f;
+        matrix.m[2][2] =  std::cos(angle);
+        matrix.m[3][3] =  1.0f;
         return matrix;
     }
 
-    static Mat4x4 RotationZ(float theta)
+    static Mat4x4 RotationZ(float angle)
     {
         Mat4x4 matrix;
-        matrix.m[0][0] =  SDL_cosf(theta);
-        matrix.m[0][1] =  SDL_sinf(theta);
-        matrix.m[1][0] = -SDL_sinf(theta);
-        matrix.m[1][1] =  SDL_cosf(theta);
-        matrix.m[2][2] = 1.0f;
-        matrix.m[3][3] = 1.0f;
+        matrix.m[0][0] =  std::cos(angle);
+        matrix.m[0][1] =  std::sin(angle);
+        matrix.m[1][0] = -std::sin(angle);
+        matrix.m[1][1] =  std::cos(angle);
+        matrix.m[2][2] =  1.0f;
+        matrix.m[3][3] =  1.0f;
         return matrix;
     }
 
@@ -73,10 +73,10 @@ public:
 
     static Mat4x4 Projection(float fov, float near, float far, int width, int height)
     {
-        float fFovRad = 1.0f / SDL_tanf(fov * 0.5f / 180.0f * 3.14159f);
+        float fovRad = 1.0f / std::tan(fov * 0.5f / 180.0f * 3.14159f);
         Mat4x4 matrix;
-        matrix.m[0][0] = (height / width) * fFovRad;
-        matrix.m[1][1] = fFovRad;
+        matrix.m[0][0] = (height / width) * fovRad;
+        matrix.m[1][1] = fovRad;
         matrix.m[2][2] = far / (far - near);
         matrix.m[3][2] = (-far * near) / (far - near);
         matrix.m[2][3] = -1.0f;
@@ -127,23 +127,24 @@ public:
 
         // Create matrix
         Mat4x4 mat;
-        mat.m[0][0] = SDL_cosf(angle) + SDL_powf(axis.x, 2.0f) *    (1 - SDL_cosf(angle));
-        mat.m[1][0] = axis.x * axis.y *  (1 - SDL_cosf(angle)) - axis.z * SDL_sinf(angle);
-        mat.m[2][0] = axis.x * axis.z *  (1 - SDL_cosf(angle)) + axis.y * SDL_sinf(angle);
+        mat.m[0][0] = std::cos(angle) + std::pow(axis.x, 2.0f) *    (1 - std::cos(angle));
+        mat.m[1][0] = axis.x * axis.y *  (1 - std::cos(angle)) - axis.z * std::sin(angle);
+        mat.m[2][0] = axis.x * axis.z *  (1 - std::cos(angle)) + axis.y * std::sin(angle);
 
-        mat.m[0][1] = axis.y * axis.x *  (1 - SDL_cosf(angle)) + axis.z * SDL_sinf(angle);
-        mat.m[1][1] = SDL_cosf(angle) + SDL_powf(axis.y, 2.0f) *    (1 - SDL_cosf(angle));
-        mat.m[2][1] = axis.y * axis.z *  (1 - SDL_cosf(angle)) - axis.x * SDL_sinf(angle);
+        mat.m[0][1] = axis.y * axis.x *  (1 - std::cos(angle)) + axis.z * std::sin(angle);
+        mat.m[1][1] = std::cos(angle) + std::pow(axis.y, 2.0f) *    (1 - std::cos(angle));
+        mat.m[2][1] = axis.y * axis.z *  (1 - std::cos(angle)) - axis.x * std::sin(angle);
 
-        mat.m[0][2] = axis.z * axis.x *  (1 - SDL_cosf(angle)) - axis.y * SDL_sinf(angle);
-        mat.m[1][2] = axis.z * axis.y *  (1 - SDL_cosf(angle)) + axis.x * SDL_sinf(angle);
-        mat.m[2][2] = SDL_cosf(angle) + SDL_powf(axis.z, 2.0f) *    (1 - SDL_cosf(angle));
+        mat.m[0][2] = axis.z * axis.x *  (1 - std::cos(angle)) - axis.y * std::sin(angle);
+        mat.m[1][2] = axis.z * axis.y *  (1 - std::cos(angle)) + axis.x * std::sin(angle);
+        mat.m[2][2] = std::cos(angle) + std::pow(axis.z, 2.0f) *    (1 - std::cos(angle));
 
         mat.m[3][3] = 1.0f;
 
         return mat;
     }
 
+    // Used to invert camera lookAt matrix
     Mat4x4 QuickInverse()
     {
         Mat4x4 matrix;
@@ -168,9 +169,6 @@ public:
         matrix.m[3][3] = 1.0f;
         return matrix;
     }
-
-    // Field
-    float m[4][4] = {0};
 
     // Matrix to Vec3D mult
     Vec3D operator * (const Vec3D& v)

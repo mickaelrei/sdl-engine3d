@@ -22,13 +22,17 @@ public:
     void run();
 
     // Window info
-    // void setWidth(int width) { _width = width; aspectRatio = _height / _width; }
-    // void setHeight(int height) { _height = height; aspectRatio = _height / _width; }
     int getWidth() { return _width; }
     int getHeight() { return _height; }
 
     // Input data
     Vec2D GetMousePos();
+
+    // Default camera control
+    float cameraMoveSpeed = 5.0f;
+    float cameraRotationSpeed = .1f;
+    void DefaultCameraMovement(float dt);
+    void DefaultCameraRotation(float dt);
 
     // Drawing
     void Fill(SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
@@ -93,16 +97,22 @@ private:
     // List of scene meshes
     std::vector<Mesh> sceneMeshes;
 
+    bool drawWireframe = false;
+
+    // Time elapsed since engine start
+    float timeElapsed = 0.0f;
+
     //-------------------//
     //      TESTING      //
     //-------------------//
 
-    bool drawWireframe = false;
-
-    // Camera manipulation
-    float theta = 0.0f;
-    float yaw = 0.0f;
-    float pitch = 0.0f;
+    Mesh rubiksCube[3][3][3];
+    bool canMove = true;
+    int axis = 0;
+    float t = 0.f;
+    float animDuration = .5f;
+    int rotating = -1;
+    float initialRotation = 0.f;
 };
 
 // Common vector operations

@@ -5,6 +5,11 @@
 
 #include "engine.hpp"
 
+float degToRad(float deg)
+{
+    return M_PI * deg / 180.0f;
+}
+
 Engine3D::Engine3D()
 {
     window = NULL;
@@ -154,38 +159,31 @@ void Engine3D::SetFPS(int fps)
     printf("Delay (ms): %d\n", delay_ms);
 }
 
-// Methods to be overriden
-void Engine3D::setup()
-{
-    // Set camera pos
-    cam.position = {0.0f, 5.0f, 15.0f};
-
-    // Load cubes
-    float size = 1.0f;
-    Mesh mesh = Mesh::MinecraftCube({size, size, size});
-    mesh.texture.init("assets/bmp/grass.bmp");
-    for (int i = -10; i < 10; i++)
-    {
-        for (int j = -10; j < 10; j++)
-        {
-            mesh.position = {i * size, 0.0f, -j * size};
-            sceneMeshes.push_back(mesh);
-        }
-    }
-
-    // Add light
-    Light light;
-    light.direction = {0.0f, 0.0f, -1.0f};
-    light.brightness = .7f;
-    lights.push_back(light);
-}
-
-void Engine3D::update(float dt)
+// Default camera controls
+void Engine3D::DefaultCameraMovement(float dt)
 {
     Vec3D right = cam.forward.cross(cam.up).unit();
-    float speed = 5.0f;
-    float turnSpeed = .01f;
+    Vec3D up = right.cross(cam.forward).unit();
 
+     // Moving left, right, front and back
+    if (keyboardState[SDL_SCANCODE_A])
+        cam.position -= right * cameraMoveSpeed * dt;
+    if (keyboardState[SDL_SCANCODE_D])
+        cam.position += right * cameraMoveSpeed * dt;
+    if (keyboardState[SDL_SCANCODE_W])
+        cam.position += cam.forward * cameraMoveSpeed * dt;
+    if (keyboardState[SDL_SCANCODE_S])
+        cam.position -= cam.forward * cameraMoveSpeed * dt;
+
+    // Moving up and down
+    if (keyboardState[SDL_SCANCODE_Q])
+        cam.position -= up * cameraMoveSpeed * dt;
+    if (keyboardState[SDL_SCANCODE_E])
+        cam.position += up * cameraMoveSpeed * dt;
+}
+
+void Engine3D::DefaultCameraRotation(float dt)
+{
     // Get mouse pos
     Vec2D mousePos = GetMousePos();
 
@@ -197,53 +195,289 @@ void Engine3D::update(float dt)
     if (mouseState.right)
     {
         // Rotate
-        cam.rotate(-mouseRel.y * turnSpeed, -mouseRel.x * turnSpeed);
+        cam.rotate(degToRad(-mouseRel.y * cameraRotationSpeed), degToRad(-mouseRel.x * cameraRotationSpeed));
 
         // Put mouse on screen center
         SDL_WarpMouseInWindow(window, (int)(_width * .5f), (int)(_height * .5f));
         lastMousePos = {_width * .5f, _height * .5f};
     }
     else lastMousePos = mousePos;
+}
 
-    // Rotating on Z with keyboard
-    if (keyboardState[SDL_SCANCODE_Z])
-        cam.rotate(0.0f, 0.0f, 1.0f * -turnSpeed);
-    if (keyboardState[SDL_SCANCODE_C])
-        cam.rotate(0.0f, 0.0f, 1.0f * turnSpeed);
+// Methods to be overriden
+void Engine3D::setup()
+{
+    // Set camera pos
+    cam.position = {-3.0f, 5.0f, 5.0f};
+    cam.rotate(-M_PI_4, -M_PI_4);
 
-    // Moving left, right, front and back
-    if (keyboardState[SDL_SCANCODE_A])
-        cam.position -= right * speed * dt;
-    if (keyboardState[SDL_SCANCODE_D])
-        cam.position += right * speed * dt;
-    if (keyboardState[SDL_SCANCODE_W])
-        cam.position += cam.forward * speed * dt;
-    if (keyboardState[SDL_SCANCODE_S])
-        cam.position -= cam.forward * speed * dt;
+    // Add cubes to rubiks cube
+    float size = 1.0f;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                Mesh mesh = Mesh::MinecraftCube({size, size, size});
+                mesh.texture.init("assets/bmp/grass.bmp");
+                mesh.position = {i * size, j * size, k * size};
 
-    // Moving up and down
-    if (keyboardState[SDL_SCANCODE_Q])
-        cam.position -= cam.up * speed * dt;
-    if (keyboardState[SDL_SCANCODE_E])
-        cam.position += cam.up * speed * dt;
+                rubiksCube[i][j][k] = mesh;
+                sceneMeshes.push_back(mesh);
+            }
+        }
+    }
+
+    // Add light
+    Light light;
+    light.direction = {0.0f, 0.0f, -1.0f};
+    light.brightness = .7f;
+    lights.push_back(light);
+}
+
+Vec3D rotatePointAroundAxisX(Vec3D point, Vec3D pivot, float angle)
+{
+    // Translate point into origin
+	point -= pivot;
+
+	// Rotate
+	float newY = point.y * std::cos(angle) - point.z * std::sin(angle);
+	float newZ = point.z * std::cos(angle) + point.y * std::sin(angle);
+
+	// Translate back to original place
+	return Vec3D(point.x, newY, newZ) + pivot;
+}
+
+Vec3D rotatePointAroundAxisY(Vec3D point, Vec3D pivot, float angle)
+{
+    // Translate point into origin
+	point -= pivot;
+
+	// Rotate
+	float newX = point.x * std::cos(angle) - point.z * std::sin(angle);
+	float newZ = point.z * std::cos(angle) + point.x * std::sin(angle);
+
+	// Translate back to original place
+	return Vec3D(newX, point.y, newZ) + pivot;
+}
+
+Vec3D rotatePointAroundAxisZ(Vec3D point, Vec3D pivot, float angle)
+{
+    // Translate point into origin
+	point -= pivot;
+
+	// Rotate
+	float newX = point.x * std::cos(angle) - point.y * std::sin(angle);
+	float newY = point.y * std::cos(angle) + point.x * std::sin(angle);
+
+	// Translate back to original place
+	return Vec3D(newX, newY, point.z) + pivot;
+}
+
+int getRubiksCubeIndex(int x, int y, int z)
+{
+    return x * 9 + y * 3 + z;
+}
+
+void Engine3D::update(float dt)
+{
+    DefaultCameraMovement(dt);
+    DefaultCameraRotation(dt);
 
     // Close
     if (keyboardState[SDL_SCANCODE_ESCAPE])
         running = false;
 
-    // Time
-    theta += dt * 2.5f;
+    // Rubiks cube input logic
+    if (keyboardState[SDL_SCANCODE_T] && canMove) {
+        canMove = false;
+        axis = 0;
+        initialRotation = sceneMeshes[getRubiksCubeIndex(0, 0, 0)].rotation.x;
+        rotating = 0;
+        t = 0.f;
+    }
+    // if (keyboardState[SDL_SCANCODE_Y] && canMove) {
+    //     canMove = false;
+    //     axis = 0;
+    //     initialRotation = sceneMeshes[getRubiksCubeIndex(1, 0, 0)].rotation.x;
+    //     rotating = 1;
+    //     t = 0.f;
+    // }
+    if (keyboardState[SDL_SCANCODE_U] && canMove) {
+        canMove = false;
+        axis = 0;
+        initialRotation = sceneMeshes[getRubiksCubeIndex(2, 0, 0)].rotation.x;
+        rotating = 2;
+        t = 0.f;
+    }
 
-    // Change fov
-    SetFOV(SDL_clamp(cam.fov - scroll * 3.f, 5.0f, 160.0f));
+    // Rubiks cube input logic
+    if (keyboardState[SDL_SCANCODE_G] && canMove) {
+        canMove = false;
+        axis = 1;
+        initialRotation = sceneMeshes[getRubiksCubeIndex(0, 0, 0)].rotation.y;
+        rotating = 0;
+        t = 0.f;
+    }
+    // if (keyboardState[SDL_SCANCODE_H] && canMove) {
+    //     canMove = false;
+    //     axis = 1;
+    //     initialRotation = sceneMeshes[getRubiksCubeIndex(0, 1, 0)].rotation.y;
+    //     rotating = 1;
+    //     t = 0.f;
+    // }
+    if (keyboardState[SDL_SCANCODE_J] && canMove) {
+        canMove = false;
+        axis = 1;
+        initialRotation = sceneMeshes[getRubiksCubeIndex(0, 2, 0)].rotation.y;
+        rotating = 2;
+        t = 0.f;
+    }
 
-    for (int i = 0; i < 20; i++)
-    {
-        for (int j = 0; j < 20; j++)
+    // Rubiks cube input logic
+    if (keyboardState[SDL_SCANCODE_B] && canMove) {
+        canMove = false;
+        axis = 2;
+        initialRotation = sceneMeshes[getRubiksCubeIndex(0, 0, 0)].rotation.z;
+        rotating = 0;
+        t = 0.f;
+    }
+    // if (keyboardState[SDL_SCANCODE_N] && canMove) {
+    //     canMove = false;
+    //     axis = 2;
+    //     initialRotation = sceneMeshes[getRubiksCubeIndex(0, 0, 1)].rotation.z;
+    //     rotating = 1;
+    //     t = 0.f;
+    // }
+    if (keyboardState[SDL_SCANCODE_M] && canMove) {
+        canMove = false;
+        axis = 2;
+        initialRotation = sceneMeshes[getRubiksCubeIndex(0, 0, 2)].rotation.z;
+        rotating = 2;
+        t = 0.f;
+    }
+
+    // Animate movement
+    if (!canMove) {
+        t = std::clamp(t + dt / animDuration, 0.0f, 1.0f);
+
+        int centerIdx;
+        switch (axis)
         {
-            sceneMeshes[i * 20 + j].position.y = SDL_sinf(theta + i * .2f + (j) * .2f) * 3.0f;
+        case 0:
+            centerIdx = getRubiksCubeIndex(rotating, 1, 1);
+            break;
+        case 1: 
+            centerIdx = getRubiksCubeIndex(1, rotating, 1);
+            break;
+        case 2:
+            centerIdx = getRubiksCubeIndex(1, 1, rotating);
+            break;
+        default:
+            break;
+        }
+
+        for (int j = 0; j < 3; j++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                int cubeIdx;
+                switch (axis)
+                {
+                case 0:
+                    cubeIdx = getRubiksCubeIndex(rotating, j, k);
+                    break;
+                case 1: 
+                    cubeIdx = getRubiksCubeIndex(j, rotating, k);
+                    break;
+                case 2:
+                    cubeIdx = getRubiksCubeIndex(j, k, rotating);
+                    break;
+                default:
+                    break;
+                }
+
+                // Get initial position before animation
+                Vec3D initialPos;
+                switch (axis)
+                {
+                case 0:
+                    initialPos = {(float)rotating, (float)j, (float)k};
+                    break;
+                case 1: 
+                    initialPos = {(float)j, (float)rotating, (float)k};
+                    break;
+                case 2:
+                    initialPos = {(float)j, (float)k, (float)rotating};
+                    break;
+                default:
+                    break;
+                }
+
+                // Move
+                float angle = M_PI_2 * (1 - std::pow((1 - t), 3.f));
+
+                Vec3D newPos;
+                switch (axis)
+                {
+                case 0:
+                    newPos = rotatePointAroundAxisX(
+                        initialPos,
+                        sceneMeshes[centerIdx].position,
+                        angle
+                    );
+                    break;
+                case 1:
+                    newPos = rotatePointAroundAxisY(
+                        initialPos,
+                        sceneMeshes[centerIdx].position,
+                        angle
+                    );
+                    break;
+                case 2:
+                    newPos = rotatePointAroundAxisZ(
+                        initialPos,
+                        sceneMeshes[centerIdx].position,
+                        angle
+                    );
+                    break;
+                default:
+                    break;
+                }
+
+                sceneMeshes[cubeIdx].position = newPos;
+
+                // Rotate
+                switch (axis)
+                {
+                case 0:
+                    sceneMeshes[cubeIdx].rotation.x = initialRotation + angle;
+                    break;
+                case 1:
+                    sceneMeshes[cubeIdx].rotation.y = initialRotation - angle;
+                    break;
+                case 2:
+                    sceneMeshes[cubeIdx].rotation.z = initialRotation + angle;
+                    break;
+                }
+            }
+        }
+
+        if (t == 1.0f) {
+            canMove = true;
+            axis = -1;
+            t = 0.f;
+            initialRotation = 0.f;
+            rotating = -1;
         }
     }
+
+    // Time
+    timeElapsed += dt;
+
+    // Change fov based on scroll
+    SetFOV(std::clamp(cam.fov - scroll * 3.f, 5.0f, 160.0f));
 }
 
 void Engine3D::draw()
@@ -309,7 +543,7 @@ void Engine3D::draw()
                 Vec3D lightDir = lights[0].direction.unit();
 
                 // Get face luminance
-                float d = SDL_clamp(normal.dot(-lightDir), 0.1f, 1.0f);
+                float d = std::clamp(normal.dot(-lightDir), 0.1f, 1.0f);
 
                 // Set luminance
                 HSL hsl;

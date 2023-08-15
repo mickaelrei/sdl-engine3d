@@ -11,7 +11,7 @@ public:
     Camera(Vec3D pos) { position = pos; }
 
     // Rotation
-    void rotate(float angleX, float angleY, float angleZ = 0.0f)
+    void rotate(float angleX, float angleY)
     {
         // Rotate on X
         Vec3D newForward = Mat4x4::AxisAngle(forward.cross(up).unit(), angleX) * forward;
@@ -24,9 +24,6 @@ public:
 
         // Rotate on Y
         forward = Mat4x4::AxisAngle(up, angleY) * forward;
-
-        // Rotate on Z
-        up = Mat4x4::AxisAngle(forward, angleZ) * up;
     }
 
     // Info

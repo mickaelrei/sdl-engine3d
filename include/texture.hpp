@@ -77,7 +77,6 @@ public:
 
     Texture& operator=(Texture other)
     {
-        printf("copy assignment\n");
         swap(*this, other);
 
         return *this;
