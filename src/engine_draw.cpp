@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <bits/stdc++.h>
 
-#include "engine.hpp"
+#include <engine.hpp>
 
 // Drawing
 void Engine3D::Fill(SDL_Color color)
@@ -11,13 +11,13 @@ void Engine3D::Fill(SDL_Color color)
     SDL_RenderClear(renderer);
 }
 
-void Engine3D::RenderPoint(Vec2D p, SDL_Color color)
+void Engine3D::RenderPoint(Vec2 p, SDL_Color color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_RenderDrawPointF(renderer, p.x, p.y);
 }
 
-void Engine3D::RenderTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
+void Engine3D::RenderTriangle(Vec2 p0, Vec2 p1, Vec2 p2, SDL_Color color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
@@ -29,15 +29,15 @@ void Engine3D::RenderTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
 /* My attempt (not perfect), reading from:
 http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
 */
-void Engine3D::FillTriangleOld(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
+void Engine3D::FillTriangleOld(Vec2 p0, Vec2 p1, Vec2 p2, SDL_Color color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
     // Create array
-    std::array<Vec2D, 3> vecList = {p0, p1, p2};
+    std::array<Vec2, 3> vecList = {p0, p1, p2};
 
     // Sort by Y
-    std::sort(vecList.begin(), vecList.end(), [](const Vec2D& first, const Vec2D& second) -> bool {
+    std::sort(vecList.begin(), vecList.end(), [](const Vec2& first, const Vec2& second) -> bool {
         return first.y < second.y;
     });
 
@@ -87,7 +87,7 @@ void Engine3D::FillTriangleOld(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
 https://github.com/OneLoneCoder/Javidx9/blob/master/ConsoleGameEngine/olcConsoleGameEngine.h
 on line 537
 */
-void Engine3D::FillTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
+void Engine3D::FillTriangle(Vec2 p0, Vec2 p1, Vec2 p2, SDL_Color color)
 {
     int x1 = (int)p0.x;
     int x2 = (int)p1.x;
@@ -234,7 +234,7 @@ void Engine3D::FillTriangle(Vec2D p0, Vec2D p1, Vec2D p2, SDL_Color color)
         }
 }
 
-void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2D p2, TexUV tex2, Texture texture)
+void Engine3D::TexturedTriangle(Vec2 p0, TexUV tex0, Vec2 p1, TexUV tex1, Vec2 p2, TexUV tex2, Texture texture)
 {
     // Convert positions to int
     int x1 = (int)p0.x;
@@ -423,7 +423,7 @@ void Engine3D::TexturedTriangle(Vec2D p0, TexUV tex0, Vec2D p1, TexUV tex1, Vec2
     }
 }
 
-void Engine3D::RenderRect(Vec2D pos, Vec2D size, int thickness, SDL_Color color)
+void Engine3D::RenderRect(Vec2 pos, Vec2 size, int thickness, SDL_Color color)
 {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 

@@ -2,9 +2,11 @@ CC := g++
 
 SOURCE_DIR := src
 
-SRC := $(SOURCE_DIR)/main.cpp \
-	   $(SOURCE_DIR)/engine_draw.cpp \
-	   $(SOURCE_DIR)/engine_main.cpp \
+# SRC := $(SOURCE_DIR)/main.cpp \
+# 	   $(SOURCE_DIR)/engine_draw.cpp \
+# 	   $(SOURCE_DIR)/engine_main.cpp \
+
+SRC := $(shell find $(SOURCE_DIR) -name '*.cpp')
 
 # Flags
 FLAGS := -lSDL2main \

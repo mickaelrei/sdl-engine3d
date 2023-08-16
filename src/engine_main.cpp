@@ -2,13 +2,165 @@
 #include <list>
 #include <algorithm>
 #include <limits>
+#include <cstdlib>
 
-#include "engine.hpp"
+#include <engine.hpp>
 
 float degToRad(float deg)
 {
     return M_PI * deg / 180.0f;
 }
+
+// Common vector operations
+Vec3 IntersectPlane(Vec3 &plane_p, Vec3 &plane_n, Vec3 &lineStart, Vec3 &lineEnd, float &t)
+{
+    plane_n = plane_n.unit();
+    float plane_d = -plane_n.dot(plane_p);
+    float ad = lineStart.dot(plane_n);
+    float bd = lineEnd.dot(plane_n);
+    t = (-plane_d - ad) / (bd - ad);
+    Vec3 lineStartToEnd = lineEnd - lineStart;
+    Vec3 lineToIntersect = lineStartToEnd * t;
+    return lineStart + lineToIntersect;
+}
+
+int ClipAgainstPlane(Vec3 plane_p, Vec3 plane_n, Triangle &in_tri, Triangle &out_tri1, Triangle &out_tri2)
+{
+    // Make sure plane normal is indeed normal
+    plane_n = plane_n.unit();
+
+    // Return signed shortest distance from point to plane, plane normal must be normalised
+    auto dist = [&](Vec3 &p)
+    {
+        return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - plane_n.dot(plane_p));
+    };
+
+    // Create two temporary storage arrays to classify points either side of plane
+    // If distance sign is positive, point lies on "inside" of plane
+    Vec3* inside_points[3];  int nInsidePointCount = 0;
+    Vec3* outside_points[3]; int nOutsidePointCount = 0;
+    TexUV* inside_tex[3]; int nInsideTexCount = 0;
+    TexUV* outside_tex[3]; int nOutsideTexCount = 0;
+
+    // Get signed distance of each point in triangle to plane
+    float d0 = dist(in_tri.p[0]);
+    float d1 = dist(in_tri.p[1]);
+    float d2 = dist(in_tri.p[2]);
+
+    if (d0 >= 0) {
+        inside_points[nInsidePointCount++] = &in_tri.p[0];
+        inside_tex[nInsideTexCount++] = &in_tri.t[0];
+    } else {
+        outside_points[nOutsidePointCount++] = &in_tri.p[0];
+        outside_tex[nOutsideTexCount++] = &in_tri.t[0];
+    }
+    if (d1 >= 0) {
+        inside_points[nInsidePointCount++] = &in_tri.p[1];
+        inside_tex[nInsideTexCount++] = &in_tri.t[1];
+    } else {
+        outside_points[nOutsidePointCount++] = &in_tri.p[1];
+        outside_tex[nOutsideTexCount++] = &in_tri.t[1];
+    }
+    if (d2 >= 0) {
+        inside_points[nInsidePointCount++] = &in_tri.p[2];
+        inside_tex[nInsideTexCount++] = &in_tri.t[2];
+    } else {
+        outside_points[nOutsidePointCount++] = &in_tri.p[2];
+        outside_tex[nOutsideTexCount++] = &in_tri.t[2];
+    }
+
+    // Now classify triangle points, and break the input triangle into 
+    // smaller output triangles if required. There are four possible
+    // outcomes...
+
+    if (nInsidePointCount == 0)
+    {
+        // All points lie on the outside of plane, so clip whole triangle
+        // It ceases to exist
+
+        return 0; // No returned triangles are valid
+    }
+
+    if (nInsidePointCount == 3)
+    {
+        // All points lie on the inside of plane, so do nothing
+        // and allow the triangle to simply pass through
+        out_tri1 = in_tri;
+
+        return 1; // Just the one returned original triangle is valid
+    }
+
+    if (nInsidePointCount == 1 && nOutsidePointCount == 2)
+    {
+        // Triangle should be clipped. As two points lie outside
+        // the plane, the triangle simply becomes a smaller triangle
+
+        // Copy appearance info to new triangle
+        out_tri1.color = in_tri.color;
+
+        // The inside point is valid, so keep that...
+        out_tri1.p[0] = *inside_points[0];
+        out_tri1.t[0] = *inside_tex[0];
+
+        // but the two new points are at the locations where the 
+        // original sides of the triangle (lines) intersect with the plane
+        float t;
+        out_tri1.p[1] = IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0], t);
+        out_tri1.t[1].u = t * (outside_tex[0]->u - inside_tex[0]->u) + inside_tex[0]->u;
+        out_tri1.t[1].v = t * (outside_tex[0]->v - inside_tex[0]->v) + inside_tex[0]->v;
+        out_tri1.t[1].w = t * (outside_tex[0]->w - inside_tex[0]->w) + inside_tex[0]->w;
+
+        out_tri1.p[2] = IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[1], t);
+        out_tri1.t[2].u = t * (outside_tex[1]->u - inside_tex[0]->u) + inside_tex[0]->u;
+        out_tri1.t[2].v = t * (outside_tex[1]->v - inside_tex[0]->v) + inside_tex[0]->v;
+        out_tri1.t[2].w = t * (outside_tex[1]->w - inside_tex[0]->w) + inside_tex[0]->w;
+
+        return 1; // Return the newly formed single triangle
+    }
+
+    if (nInsidePointCount == 2 && nOutsidePointCount == 1)
+    {
+        // Triangle should be clipped. As two points lie inside the plane,
+        // the clipped triangle becomes a "quad". Fortunately, we can
+        // represent a quad with two new triangles
+
+        // Copy appearance info to new triangles
+        out_tri1.color = in_tri.color;
+        out_tri2.color = in_tri.color;
+
+        // The first triangle consists of the two inside points and a new
+        // point determined by the location where one side of the triangle
+        // intersects with the plane
+        out_tri1.p[0] = *inside_points[0];
+        out_tri1.p[1] = *inside_points[1];
+        out_tri1.t[0] = *inside_tex[0];
+        out_tri1.t[1] = *inside_tex[1];
+
+        float t;
+        out_tri1.p[2] = IntersectPlane(plane_p, plane_n, *inside_points[0], *outside_points[0], t);
+        out_tri1.t[2].u = t * (outside_tex[0]->u - inside_tex[0]->u) + inside_tex[0]->u;
+        out_tri1.t[2].v = t * (outside_tex[0]->v - inside_tex[0]->v) + inside_tex[0]->v;
+        out_tri1.t[2].w = t * (outside_tex[0]->w - inside_tex[0]->w) + inside_tex[0]->w;
+
+        // The second triangle is composed of one of he inside points, a
+        // new point determined by the intersection of the other side of the 
+        // triangle and the plane, and the newly created point above
+        out_tri2.p[0] = *inside_points[1];
+        out_tri2.t[0] = *inside_tex[1];
+        out_tri2.p[1] = out_tri1.p[2];
+        out_tri2.t[1] = out_tri1.t[2];
+
+        out_tri2.p[2] = IntersectPlane(plane_p, plane_n, *inside_points[1], *outside_points[0], t);
+        out_tri2.t[2].u = t * (outside_tex[0]->u - inside_tex[1]->u) + inside_tex[1]->u;
+        out_tri2.t[2].v = t * (outside_tex[0]->v - inside_tex[1]->v) + inside_tex[1]->v;
+        out_tri2.t[2].w = t * (outside_tex[0]->w - inside_tex[1]->w) + inside_tex[1]->w;
+
+        return 2; // Return two newly formed triangles which form a quad
+    }
+
+    return 0;
+}
+
 
 Engine3D::Engine3D()
 {
@@ -93,11 +245,11 @@ Engine3D::~Engine3D()
 void Engine3D::SetFOV(float fov)
 {
     cam.fov = fov;
-    matProj = Mat4x4::Projection(cam.fov, cam.near, cam.far, _width, _height);
+    matProj = Mat4::Projection(cam.fov, cam.near, cam.far, _width, _height);
 }
 
 // Input
-Vec2D Engine3D::GetMousePos()
+Vec2 Engine3D::GetMousePos()
 {
     int x, y;
     SDL_GetMouseState(&x, &y);
@@ -162,8 +314,8 @@ void Engine3D::SetFPS(int fps)
 // Default camera controls
 void Engine3D::DefaultCameraMovement(float dt)
 {
-    Vec3D right = cam.forward.cross(cam.up).unit();
-    Vec3D up = right.cross(cam.forward).unit();
+    Vec3 right = cam.forward.cross(cam.up).unit();
+    Vec3 up = right.cross(cam.forward).unit();
 
      // Moving left, right, front and back
     if (keyboardState[SDL_SCANCODE_A])
@@ -185,10 +337,10 @@ void Engine3D::DefaultCameraMovement(float dt)
 void Engine3D::DefaultCameraRotation(float dt)
 {
     // Get mouse pos
-    Vec2D mousePos = GetMousePos();
+    Vec2 mousePos = GetMousePos();
 
     // Get change since last pos
-    Vec2D mouseRel = mousePos - lastMousePos;
+    Vec2 mouseRel = mousePos - lastMousePos;
 
     // Rotating with mouse
     SDL_SetRelativeMouseMode(mouseState.right ? SDL_TRUE : SDL_FALSE);
@@ -219,7 +371,10 @@ void Engine3D::setup()
         {
             for (int k = 0; k < 3; k++)
             {
-                Mesh mesh = Mesh::MinecraftCube({size, size, size});
+                Mesh mesh = Mesh::MinecraftCube();
+                mesh.size = {size, size, size};
+                // HSL color = {(float)(rand() % 360), 1.0, .5};
+                // mesh.SetColor(color.ToRGB());
                 mesh.texture.init("assets/bmp/grass.bmp");
                 mesh.position = {i * size, j * size, k * size};
 
@@ -236,7 +391,7 @@ void Engine3D::setup()
     lights.push_back(light);
 }
 
-Vec3D rotatePointAroundAxisX(Vec3D point, Vec3D pivot, float angle)
+Vec3 rotatePointAroundAxisX(Vec3 point, Vec3 pivot, float angle)
 {
     // Translate point into origin
 	point -= pivot;
@@ -246,10 +401,10 @@ Vec3D rotatePointAroundAxisX(Vec3D point, Vec3D pivot, float angle)
 	float newZ = point.z * std::cos(angle) + point.y * std::sin(angle);
 
 	// Translate back to original place
-	return Vec3D(point.x, newY, newZ) + pivot;
+	return Vec3(point.x, newY, newZ) + pivot;
 }
 
-Vec3D rotatePointAroundAxisY(Vec3D point, Vec3D pivot, float angle)
+Vec3 rotatePointAroundAxisY(Vec3 point, Vec3 pivot, float angle)
 {
     // Translate point into origin
 	point -= pivot;
@@ -259,10 +414,10 @@ Vec3D rotatePointAroundAxisY(Vec3D point, Vec3D pivot, float angle)
 	float newZ = point.z * std::cos(angle) + point.x * std::sin(angle);
 
 	// Translate back to original place
-	return Vec3D(newX, point.y, newZ) + pivot;
+	return Vec3(newX, point.y, newZ) + pivot;
 }
 
-Vec3D rotatePointAroundAxisZ(Vec3D point, Vec3D pivot, float angle)
+Vec3 rotatePointAroundAxisZ(Vec3 point, Vec3 pivot, float angle)
 {
     // Translate point into origin
 	point -= pivot;
@@ -272,7 +427,7 @@ Vec3D rotatePointAroundAxisZ(Vec3D point, Vec3D pivot, float angle)
 	float newY = point.y * std::cos(angle) + point.x * std::sin(angle);
 
 	// Translate back to original place
-	return Vec3D(newX, newY, point.z) + pivot;
+	return Vec3(newX, newY, point.z) + pivot;
 }
 
 int getRubiksCubeIndex(int x, int y, int z)
@@ -399,17 +554,29 @@ void Engine3D::update(float dt)
                 }
 
                 // Get initial position before animation
-                Vec3D initialPos;
+                Vec3 initialPos;
                 switch (axis)
                 {
                 case 0:
-                    initialPos = {(float)rotating, (float)j, (float)k};
+                    initialPos = rotatePointAroundAxisX(
+                        {(float)rotating, (float)j, (float)k},
+                        sceneMeshes[centerIdx].position,
+                        initialRotation
+                    );
                     break;
                 case 1: 
-                    initialPos = {(float)j, (float)rotating, (float)k};
+                    initialPos = rotatePointAroundAxisY(
+                        {(float)j, (float)rotating, (float)k},
+                        sceneMeshes[centerIdx].position,
+                        initialRotation
+                    );
                     break;
                 case 2:
-                    initialPos = {(float)j, (float)k, (float)rotating};
+                    initialPos = rotatePointAroundAxisZ(
+                        {(float)j, (float)k, (float)rotating},
+                        sceneMeshes[centerIdx].position,
+                        initialRotation
+                    );
                     break;
                 default:
                     break;
@@ -418,7 +585,7 @@ void Engine3D::update(float dt)
                 // Move
                 float angle = M_PI_2 * (1 - std::pow((1 - t), 3.f));
 
-                Vec3D newPos;
+                Vec3 newPos;
                 switch (axis)
                 {
                 case 0:
@@ -496,18 +663,18 @@ void Engine3D::draw()
     for (auto mesh : sceneMeshes)
     {
         // Apply rotation
-        Mat4x4 matRotZ = Mat4x4::AxisAngle({0.0f, 0.0f, 1.0f}, mesh.rotation.z);
-        Mat4x4 matRotY = Mat4x4::AxisAngle({0.0f, 1.0f, 0.0f}, mesh.rotation.y);
-        Mat4x4 matRotX = Mat4x4::AxisAngle({1.0f, 0.0f, 0.0f}, mesh.rotation.x);
+        Mat4 matRotZ = Mat4::AxisAngle({0.0f, 0.0f, 1.0f}, mesh.rotation.z);
+        Mat4 matRotY = Mat4::AxisAngle({0.0f, 1.0f, 0.0f}, mesh.rotation.y);
+        Mat4 matRotX = Mat4::AxisAngle({1.0f, 0.0f, 0.0f}, mesh.rotation.x);
 
-        Mat4x4 matTrans = Mat4x4::Translation(mesh.position * Vec3D(1.0f, 1.0f, 1.0f));
-        Mat4x4 matWorld = Mat4x4::Identity() * matRotZ * matRotY * matRotX * matTrans;
+        Mat4 matTrans = Mat4::Translation(mesh.position * Vec3(1.0f, 1.0f, 1.0f));
+        Mat4 matWorld = Mat4::Identity() * matRotZ * matRotY * matRotX * matTrans;
 
         // Camera look at matrix
-        Mat4x4 matCamera = Mat4x4::LookAt(cam.position, cam.position + cam.forward, cam.up);
+        Mat4 matCamera = Mat4::LookAt(cam.position, cam.position + cam.forward, cam.up);
 
         // Make view from camera
-        Mat4x4 matView = matCamera.QuickInverse();
+        Mat4 matView = matCamera.QuickInverse();
 
         // Project triangles
         std::vector<Triangle> trianglesToRaster;
@@ -527,7 +694,7 @@ void Engine3D::draw()
             }
 
             // Calculate triangle normal
-            Vec3D normal, line1, line2;
+            Vec3 normal, line1, line2;
             line1 = triTransformed.p[1] - triTransformed.p[0];
             line2 = triTransformed.p[2] - triTransformed.p[0];
 
@@ -535,12 +702,12 @@ void Engine3D::draw()
             normal = line1.cross(line2).unit();
 
             // Get ray from triangle to camera
-            Vec3D cameraRay = triTransformed.p[0] - cam.position;
+            Vec3 cameraRay = triTransformed.p[0] - cam.position;
 
             if (normal.dot(cameraRay) < 0.0f)
             {
                 // Illumination
-                Vec3D lightDir = lights[0].direction.unit();
+                Vec3 lightDir = lights[0].direction.unit();
 
                 // Get face luminance
                 float d = std::clamp(normal.dot(-lightDir), 0.1f, 1.0f);
@@ -594,7 +761,7 @@ void Engine3D::draw()
                     }
 
                     // Apply position modifiers
-                    Vec3D offsetView = {1.0f, 1.0f, 0.0f};
+                    Vec3 offsetView = {1.0f, 1.0f, 0.0f};
                     for (int i = 0; i < 3; i++)
                     {
                         // Scale into view

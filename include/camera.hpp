@@ -1,36 +1,24 @@
 #pragma once
 
 #define _USE_MATH_DEFINES
-#include "mat4x4.hpp"
+#include <mat4.hpp>
 #include <cmath>
 
 class Camera
 {
 public:
-    Camera() {}
-    Camera(Vec3D pos) { position = pos; }
+    Camera();
+    Camera(Vec3 pos);
 
     // Rotation
-    void rotate(float angleX, float angleY)
-    {
-        // Rotate on X
-        Vec3D newForward = Mat4x4::AxisAngle(forward.cross(up).unit(), angleX) * forward;
+    void rotate(float angleX, float angleY);
 
-        // Avoid gimball-lock when looking totally up or totally down
-        if (std::abs(Vec3D::angle(newForward, up) - M_PI_2) <= 85.0f / 180.0f * M_PI)
-        {
-            forward = newForward;
-        }
+    // Orientation info
+    Vec3 position = {0.0f, 0.0f, 0.0f};
+    Vec3 forward = {0.0f, 0.0f, -1.0f};
+    Vec3 up = {0.0f, 1.0f, 0.0f};
 
-        // Rotate on Y
-        forward = Mat4x4::AxisAngle(up, angleY) * forward;
-    }
-
-    // Info
-    Vec3D position = {0.0f, 0.0f, 0.0f};
-    Vec3D forward = {0.0f, 0.0f, -1.0f};
-    Vec3D up = {0.0f, 1.0f, 0.0f};
-
+    // Basic camera info
     float near = .1f, far = 1000.0f;
     float fov = 90.0f;
 };

@@ -7,20 +7,20 @@
 #include <sstream>
 
 // Other structs
-#include "camera.hpp"
-#include "hsl.hpp"
-#include "mat4x4.hpp"
-#include "mesh.hpp"
-#include "texture.hpp"
-#include "texuv.hpp"
-#include "triangle.hpp"
-#include "vec2d.hpp"
-#include "vec3d.hpp"
+#include <camera.hpp>
+#include <hsl.hpp>
+#include <mat4.hpp>
+#include <mesh.hpp>
+#include <texture.hpp>
+#include <texuv.hpp>
+#include <triangle.hpp>
+#include <vec2.hpp>
+#include <vec3.hpp>
 
 // Lighting
 struct Light
 {
-    Vec3D direction = {0.0f, 0.0f, 0.0f};
+    Vec3 direction = {0.0f, 0.0f, 0.0f};
     float brightness = 0.0f;
 };
 
