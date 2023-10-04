@@ -13,26 +13,38 @@ public:
     ~Engine3D();
     bool init(int width = 600, int height = 600);
 
-    // Override methods
-    void setup();
-    void update(float dt);
-    void draw();
-
     // Method to start engine
     void run();
+
+    // Method to add objects in scene
+    void addMesh(Mesh mesh);
+    void addLight(Light light);
+
+    // Override methods
+    virtual void setup();
+    virtual void update(float dt);
 
     // Window info
     int getWidth() { return _width; }
     int getHeight() { return _height; }
 
-    // Input data
+    // Mouse
     Vec2 GetMousePos();
+    MouseState mouseState;
+    Sint32 scroll;
 
     // Default camera control
     float cameraMoveSpeed = 5.0f;
     float cameraRotationSpeed = .1f;
     void DefaultCameraMovement(float dt);
     void DefaultCameraRotation(float dt);
+
+    // Camera
+    Camera cam;
+    void SetFOV(float fov);
+
+    // List of scene meshes
+    std::vector<Mesh> sceneMeshes;
 
     // Drawing
     void Fill(SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
@@ -54,10 +66,16 @@ public:
     // Window title
     std::string windowTitle = "SDL Engine 3D";
 
+    // Keyboard input
+    const Uint8 *keyboardState;
+
     // Running
     bool running = true;
 
 private:
+    // Default method for drawing all scene meshes
+    void draw();
+
     // SDL Render data
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -69,77 +87,24 @@ private:
     // Depth buffer
     float *depthBuffer = NULL;
 
-    // Keyboard input
-    const Uint8 *keyboardState;
-
     // Mouse state
     void MouseUp(SDL_MouseButtonEvent button);
     void MouseDown(SDL_MouseButtonEvent button);
-    MouseState mouseState;
     Vec2 lastMousePos;
-    Sint32 scroll;
 
     // Performance data
     Uint32 delay_ms = 0;
     Uint32 lastTick, nowTick;
     float dt;
 
-    // Camera
-    Camera cam;
-
     // Matrices
-    void SetFOV(float fov);
     Mat4 matProj;
 
     // Rendering related
     std::vector<Light> lights;
 
-    // List of scene meshes
-    std::vector<Mesh> sceneMeshes;
-
     bool drawWireframe = false;
 
     // Time elapsed since engine start
     float timeElapsed = 0.0f;
-
-    //-------------------//
-    //      TESTING      //
-    //-------------------//
-
-    // Cylinder resolution (quality)
-    int resolution = 24;
-
-    // Cylinder radiuses
-    float clockRadius = 20.0f;
-    float secondArmRadius = 0.5f;
-    float minuteArmRadius = 0.8f;
-    float hourArmRadius = 1.0f;
-
-    // Cylinder heights
-    float secondArmLength = 12.0f;
-    float minuteArmLength = 18.0f;
-    float hourArmLength = 9.0f;
-
-    // Arm Y position
-    float armPosY = 1.0f;
-
-    // Clock floor height
-    float clockHeight = 2.0f;
-
-    // Colors
-    SDL_Color clockColor = {255, 255, 255, 255};
-    SDL_Color secondArmColor = {255, 0, 0, 255};
-    SDL_Color minuteArmColor = {50, 50, 50, 255};
-    SDL_Color hourArmColor = {50, 50, 50, 255};
-
-    // Hour mark info
-    float hourMarkRadius = .2f;
-    float hourMarkLength = 3.0f;
-    float hourMarkBorderOffset = 1.0f;
-    SDL_Color hourMarkColor = {15, 15, 15, 255};
-
-    // Time info
-    float secondArmAngle = M_PIf * 0.1f;
-    float minuteArmAngle = M_PIf * 1.3f;
-    float hourArmAngle = M_PIf * .2f;
 };
