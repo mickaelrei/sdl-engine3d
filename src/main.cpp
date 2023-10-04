@@ -13,6 +13,14 @@ int main(int argc, char **argv)
 
     engine.run();
 
+    // HSL hsl;
+    // hsl.FromRGB(SDL_Color{255, 0, 0, 255});
+    // std::cout << "HSL{" << hsl.H << ", " << hsl.S << ", " << hsl.L << "}\n";
+
+    // Multiply by light brightness
+    // hsl.L *= d * lights[0].brightness;
+    // triProjected.color = hsl.ToRGB();
+
 
     return 0;
 }

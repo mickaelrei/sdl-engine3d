@@ -2,7 +2,6 @@
 
 #include <ostream>
 #include <algorithm>
-#include <SDL2/SDL.h>
 
 class Vec3
 {

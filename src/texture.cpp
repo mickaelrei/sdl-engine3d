@@ -18,6 +18,13 @@ Texture::~Texture()
 
 bool Texture::init(std::string filePath)
 {
+    // Check if already loaded
+    if (loaded)
+    {
+        printf("Already loaded from file\n");
+        return false;
+    }
+
     // Try to load image
     surface = SDL_LoadBMP(filePath.c_str());
     if (surface == NULL) {
@@ -27,41 +34,62 @@ bool Texture::init(std::string filePath)
     }
 
     // Set size
-    loaded = true;
     width = surface->w; height = surface->h;
+
+    // Change states
+    loaded = true;
+    isBaseColor = false;
+
+    return loaded;
+}
+
+bool Texture::init(SDL_Color color)
+{
+    // Set base color
+    baseColor = color;
+
+    // Change states
+    loaded = true;
+    isBaseColor = true;
 
     return loaded;
 }
 
 SDL_Color Texture::GetColorAt(int x, int y)
+{
+    // Check if not loaded
+    if (!loaded)
     {
-        // Check if not loaded
-        if (!loaded || !surface)
-        {
-            printf("Not loaded\n");
-            return {0, 0, 0, 0};
-        }
-
-        // Check if out of bounds
-        if (x < 0 || x >= width || y < 0 || y >= height)
-        {
-            // printf("[ColorAt]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", x, y, width, height);
-            return {0, 0, 0, 0};
-        }
-
-        // Declare color
-        SDL_Color rgb;
-
-        // Get pixel data
-        Uint32 data = GetPixel(x, y);
-
-        // Get RGB
-        SDL_GetRGB(data, surface->format, &rgb.r, &rgb.g, &rgb.b);
-
-        // Set alpha to max
-        rgb.a = SDL_ALPHA_OPAQUE;
-        return rgb;
+        printf("Not loaded\n");
+        return {0, 0, 0, 0};
     }
+
+    // Check if is base color
+    if (isBaseColor) return baseColor;
+
+    // If not base color, check for surface
+    if (!surface) return {0, 0, 0, 0};
+
+    // Check if out of bounds
+    if (x < 0 || x >= width || y < 0 || y >= height)
+    {
+        // printf("[ColorAt]: Coordinate (%d, %d) out of texture bounds (%d, %d)\n", x, y, width, height);
+        return {0, 0, 0, 0};
+    }
+
+    // Declare color
+    SDL_Color rgb;
+
+    // Get pixel data
+    Uint32 data = GetPixel(x, y);
+
+    // Get RGB
+    SDL_GetRGB(data, surface->format, &rgb.r, &rgb.g, &rgb.b);
+
+    // Set alpha to max
+    rgb.a = SDL_ALPHA_OPAQUE;
+    return rgb;
+}
 
 // Get pixel data
 Uint32 Texture::GetPixel(int x, int y)

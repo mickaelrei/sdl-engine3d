@@ -41,7 +41,7 @@ public:
     void RenderTriangle(Vec2 v0, Vec2 v1, Vec2 v2, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
     void FillTriangle(Vec2 v0, Vec2 v1, Vec2 v2, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
     void FillTriangleOld(Vec2 v0, Vec2 v1, Vec2 v2, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
-    void TexturedTriangle(Vec2 p0, TexUV tex0, Vec2 p1, TexUV tex1, Vec2 p2, TexUV tex2, Texture texture);
+    void TexturedTriangle(Vec2 p0, TexUV tex0, Vec2 p1, TexUV tex1, Vec2 p2, TexUV tex2, Texture texture, SDL_Color color = {0, 0, 0, 0});
     // Rect
     void RenderRect(Vec2 pos, Vec2 size, int thickness = 0, SDL_Color color = {0, 0, 0, SDL_ALPHA_OPAQUE});
     // Circle
@@ -106,11 +106,40 @@ private:
     //      TESTING      //
     //-------------------//
 
-    Mesh rubiksCube[3][3][3];
-    bool canMove = true;
-    int axis = 0;
-    float t = 0.f;
-    float animDuration = .5f;
-    int rotating = -1;
-    float initialRotation = 0.f;
+    // Cylinder resolution (quality)
+    int resolution = 24;
+
+    // Cylinder radiuses
+    float clockRadius = 20.0f;
+    float secondArmRadius = 0.5f;
+    float minuteArmRadius = 0.8f;
+    float hourArmRadius = 1.0f;
+
+    // Cylinder heights
+    float secondArmLength = 12.0f;
+    float minuteArmLength = 18.0f;
+    float hourArmLength = 9.0f;
+
+    // Arm Y position
+    float armPosY = 1.0f;
+
+    // Clock floor height
+    float clockHeight = 2.0f;
+
+    // Colors
+    SDL_Color clockColor = {255, 255, 255, 255};
+    SDL_Color secondArmColor = {255, 0, 0, 255};
+    SDL_Color minuteArmColor = {50, 50, 50, 255};
+    SDL_Color hourArmColor = {50, 50, 50, 255};
+
+    // Hour mark info
+    float hourMarkRadius = .2f;
+    float hourMarkLength = 3.0f;
+    float hourMarkBorderOffset = 1.0f;
+    SDL_Color hourMarkColor = {15, 15, 15, 255};
+
+    // Time info
+    float secondArmAngle = M_PIf * 0.1f;
+    float minuteArmAngle = M_PIf * 1.3f;
+    float hourArmAngle = M_PIf * .2f;
 };
