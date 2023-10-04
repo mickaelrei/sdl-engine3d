@@ -16,7 +16,7 @@ FLAGS := -lSDL2main \
 # Binary folder
 DST := ./bin
 
-all: tests
+all: dir tests
 
 tests: $(DST)/clock
 
@@ -31,11 +31,11 @@ $(DST)/clock: $(TESTS)/clock.cpp $(DST)/engine.o
 		   $(DST)/vec3.o    \
 		   -o $(DST)/clock $(FLAGS)
 
-dir:
+dir: $(DST)
 	if [ ! -d $(DST) ]; then mkdir $(DST); fi
 
 clean:
-	rm -f ./*.o; if [ -d $(DST) ]; then rm -f $(DST)/*.o; fi
+	if [ -d $(DST) ]; then rm -f $(DST)/*.o; fi
 
 $(DST)/engine.o: $(SRC)/engine.cpp $(INCLUDE)/engine.hpp $(DST)/vec2.o $(DST)/camera.o $(DST)/mesh.o
 	$(CXX) -I $(INCLUDE) -c $(SRC)/engine.cpp $(FLAGS) -o $(DST)/engine.o

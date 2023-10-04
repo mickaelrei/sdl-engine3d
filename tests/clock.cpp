@@ -1,4 +1,6 @@
 #include <engine.hpp>
+#include <algorithm>
+#include <cmath>
 
 // Used to rotate the clock arms
 Vec3 rotatePointAroundAxisX(Vec3 point, Vec3 pivot, float angle)
@@ -47,8 +49,9 @@ public:
     // Override methods
     void setup() override;
     void update(float dt) override;
+
+    float timeZoneOffset = -3.0f;
 private:
-    Mesh floor, secondArm, minuteArm, hourArm;
     // Cylinder resolution (quality)
     int resolution = 36;
 
@@ -100,11 +103,11 @@ void ClockScene::setup()
     // cam.rotate(-M_PIf * .2f, 0.0f);
 
     // Clock floor
-    floor = Mesh::Cylinder(clockRadius, clockHeight, resolution);
+    Mesh floor = Mesh::Cylinder(clockRadius, clockHeight, resolution);
     floor.texture.init(clockColor);
 
     // Seconds arm
-    secondArm = Mesh::Cylinder(secondArmRadius, secondArmLength, resolution);
+    Mesh secondArm = Mesh::Cone(secondArmRadius, secondArmLength, resolution);
     // Position based on angle
     secondArm.position = rotatePointAroundAxisY(
         Vec3{secondArmLength * .5f, armPosY, 0.0f},
@@ -115,12 +118,12 @@ void ClockScene::setup()
     secondArm.rotation = {
         M_PIf * 0.5f,
         M_PIf * 0.0f,
-        secondArmAngle + M_PIf * 0.5f
+        secondArmAngle + M_PIf * 1.5f
     };
     secondArm.texture.init(secondArmColor);
 
     // Minutes arm
-    minuteArm = Mesh::Cylinder(minuteArmRadius, minuteArmLength, resolution);
+    Mesh minuteArm = Mesh::Cone(minuteArmRadius, minuteArmLength, resolution);
     // Position based on angle
     minuteArm.position = rotatePointAroundAxisY(
         Vec3{minuteArmLength * .5f, armPosY, 0.0f},
@@ -131,12 +134,12 @@ void ClockScene::setup()
     minuteArm.rotation = {
         M_PIf * 0.5f,
         M_PIf * 0.0f,
-        minuteArmAngle + M_PIf * 0.5f
+        minuteArmAngle + M_PIf * 1.5f
     };
     minuteArm.texture.init(minuteArmColor);
 
     // Hours arm
-    hourArm = Mesh::Cylinder(hourArmRadius, hourArmLength, resolution);
+    Mesh hourArm = Mesh::Cone(hourArmRadius, hourArmLength, resolution);
     hourArm.position = rotatePointAroundAxisY(
         Vec3{hourArmLength * .5f, armPosY, 0.0f},
         Vec3{0.0f, armPosY, 0.0f},
@@ -145,15 +148,21 @@ void ClockScene::setup()
     hourArm.rotation = {
         M_PIf * 0.5f,
         M_PIf * 0.0f,
-        hourArmAngle + M_PIf * 0.5f
+        hourArmAngle + M_PIf * 1.5f
     };
     hourArm.texture.init(hourArmColor);
+
+    // Middle ball
+    Mesh ball = Mesh::Sphere(minuteArmRadius * 2.0f, resolution);
+    ball.texture.init(minuteArmColor);
+    ball.position = Vec3{0.0f, armPosY, 0.0f};
 
     // Add clock objects to scene
     addMesh(secondArm);
     addMesh(minuteArm);
     addMesh(hourArm);
     addMesh(floor);
+    addMesh(ball);
 
     // Hour marks
     for (int i = 0; i <= 12; i++) {
@@ -214,7 +223,7 @@ void ClockScene::setup()
 
     // Add light
     Light light;
-    light.direction = {1.5f, -1.0f, 0.0f};
+    light.direction = {0.8f, -1.0f, 0.0f};
     light.brightness = 1.0f;
     addLight(light);
 }
@@ -235,7 +244,7 @@ void ClockScene::update(float dt)
     // Time
     int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()
-    ).count() % (3600 * 1000);
+    ).count() % (60 * 60 * 12 * 1000);
     
     float t = static_cast<float>(ms) / 1000.0f;
 
@@ -243,16 +252,14 @@ void ClockScene::update(float dt)
     // Get clock info
 
     // Get hours
-    float hours = t / 3600.0f;
-    hours = hours - 12.0f * std::round(hours / 12.0f);
-    
+    float hours =  fmod(t / 3600.0f, 12.0f) + timeZoneOffset;
+    printf("hours: %f\n", hours);
+     
     // Get seconds
-    float seconds = t;
-    seconds = seconds - 60.0f * std::round(seconds / 60.0f);
+    float seconds = fmod(t, 60.0f);
 
     // Get minutes
-    float minutes = t / 60.0f;
-    minutes = minutes - 60.0f * std::round(minutes / 60.0f);
+    float minutes = fmod(t / 60.0f, 60.0f);
 
     // --------------
     // Set clock arms
@@ -266,7 +273,7 @@ void ClockScene::update(float dt)
         Vec3{0.0f, armPosY, 0.0f},
         secondAngle
     );
-    sceneMeshes[0].rotation.z = secondAngle + M_PIf * 0.5f;
+    sceneMeshes[0].rotation.z = secondAngle + M_PIf * 1.5f;
 
     // Set minute arm
     float minuteAngle = minutes / 60.0f * M_PIf * 2.0f;
@@ -277,7 +284,7 @@ void ClockScene::update(float dt)
         Vec3{0.0f, armPosY, 0.0f},
         minuteAngle
     );
-    sceneMeshes[1].rotation.z = minuteAngle + M_PIf * 0.5f;
+    sceneMeshes[1].rotation.z = minuteAngle + M_PIf * 1.5f;
 
     // Set hour arm
     float hourAngle = hours / 12.0f * M_PIf * 2.0f;
@@ -288,7 +295,9 @@ void ClockScene::update(float dt)
         Vec3{0.0f, armPosY, 0.0f},
         hourAngle
     );
-    sceneMeshes[2].rotation.z = hourAngle + M_PIf * 0.5f;
+    sceneMeshes[2].rotation.z = hourAngle + M_PIf * 1.5f;
+
+    // printf("Seconds: %f, Minutes: %f, Hours: %f\n", seconds, minutes, hours);
 
 
     // Change fov based on scroll

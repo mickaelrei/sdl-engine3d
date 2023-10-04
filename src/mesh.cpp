@@ -185,7 +185,7 @@ Mesh Mesh::MinecraftCube()
     return mesh;
 }
 
-Mesh Sphere(float radius, int resolution = 10)
+Mesh Mesh::Sphere(float radius, int resolution)
 {
     Mesh mesh;
 
@@ -201,9 +201,9 @@ Mesh Sphere(float radius, int resolution = 10)
             float lon = map(j, 0, resolution-1, 0, M_PI);
 
             Vec3 v;
-            v.x = std::sin(lon) * std::cos(lat) * radius * 0.5f;
-            v.y = std::sin(lon) * std::sin(lat) * radius * 0.5f;
-            v.z = std::cos(lon) * radius * 0.5f;
+            v.x = std::sin(lon) * std::cos(lat) * radius;
+            v.y = std::sin(lon) * std::sin(lat) * radius;
+            v.z = std::cos(lon) * radius;
 
             vertices.push_back(v);
         }
@@ -243,7 +243,7 @@ Mesh Sphere(float radius, int resolution = 10)
     return mesh;
 }
 
-Mesh Cone(float baseRadius, float height, int resolution = 10)
+Mesh Mesh::Cone(float baseRadius, float height, int resolution)
 {
     Mesh mesh;
     
