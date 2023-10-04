@@ -3,12 +3,18 @@
 #include <algorithm>
 #include <limits>
 #include <cstdlib>
+#include <chrono>
 
 #include <engine.hpp>
 
 float degToRad(float deg)
 {
     return M_PIf * deg / 180.0f;
+}
+
+float radToDeg(float rad)
+{
+    return rad / M_PIf * 180.0f;
 }
 
 // Common vector operations
@@ -295,6 +301,9 @@ void Engine3D::setup()
     cam.position = {0.0f, 22.0f, 3.0f};
     cam.rotate(-M_PIf * .472f, 0.0f);
 
+    // cam.position = {0.0f, 10.0f, 25.0f};
+    // cam.rotate(-M_PIf * .2f, 0.0f);
+
     // Clock floor
     Mesh clockFloor = Mesh::Cylinder(clockRadius, clockHeight, resolution);
     clockFloor.texture.init(clockColor);
@@ -413,8 +422,6 @@ void Engine3D::setup()
     light.direction = {1.5f, -1.0f, 0.0f};
     light.brightness = 1.0f;
     lights.push_back(light);
-
-    timeElapsed = 7200.0f;
 }
 
 void Engine3D::update(float dt)
@@ -427,31 +434,33 @@ void Engine3D::update(float dt)
         running = false;
 
     // Time
-    timeElapsed += dt * 1.0f;
+    int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count() % (3600 * 1000);
+    
+    // timeElapsed += dt * 1.0f;
+    timeElapsed = static_cast<float>(ms) / 1000.0f;
 
     // --------------
     // Get clock info
 
     // Get hours
     float hours = timeElapsed / 3600.0f;
-    while (hours > 24.0f)
-        hours -= 24.0f;
+    hours = hours - 12.0f * std::round(hours / 12.0f);
     
     // Get seconds
     float seconds = timeElapsed;
-    while (seconds > 60.0f)
-        seconds -= 60.0f;
+    seconds = seconds - 60.0f * std::round(seconds / 60.0f);
 
     // Get minutes
     float minutes = timeElapsed / 60.0f;
-    while (minutes > 60.0f)
-        minutes -= 60.0f;
+    minutes = minutes - 60.0f * std::round(minutes / 60.0f);
 
     // --------------
     // Set clock arms
 
     // Set second arm
-    float secondAngle = seconds / 60.0f * M_PIf * 2.0f;
+    float secondAngle = std::floor(seconds) / 60.0f * M_PIf * 2.0f;
     // Angle zero is on right, but zero seconds should be on top of clock
     secondAngle -= M_PIf * 0.5f;
     sceneMeshes[0].position = rotatePointAroundAxisY(
@@ -875,6 +884,7 @@ void Engine3D::run()
         lastTick = nowTick;
         nowTick = SDL_GetPerformanceCounter();
         dt = (nowTick - lastTick) / (float)SDL_GetPerformanceFrequency();
+        // printf("DT: %f\n", dt);
 
         // Call methods
         update(dt);
